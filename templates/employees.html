@@ -1,0 +1,143 @@
+{% extends "base.html" %}
+{% block content %}
+<style>
+  .toolbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; }
+  .toolbar h2 { font-size: 1.2rem; }
+  .toolbar .count { font-size: 0.9rem; color: #666; }
+  .table-wrap { overflow-x: auto; background: #fff; border-radius: 8px; box-shadow: 0 1px 4px rgba(0,0,0,.1); }
+  table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
+  thead tr { background: #1a3a5c; color: #fff; }
+  thead th { padding: 0.7rem 1rem; text-align: left; white-space: nowrap; font-weight: 600; }
+  tbody tr:nth-child(even) { background: #f8fafc; }
+  tbody tr:hover { background: #eef3f9; }
+  tbody td { padding: 0.6rem 1rem; border-bottom: 1px solid #e8ecf0; vertical-align: top; }
+  .empty { text-align: center; padding: 3rem; color: #888; }
+  .empty a { color: #1a3a5c; }
+  details summary { cursor: pointer; color: #1a3a5c; font-size: 0.82rem; }
+  details ul { margin-top: 0.4rem; padding-left: 1rem; list-style: none; }
+  details ul li { font-size: 0.8rem; color: #444; line-height: 1.6; }
+  details ul li span { font-weight: 600; }
+  tbody td a { color: #1a3a5c; text-decoration: none; }
+  tbody td a:hover { text-decoration: underline; }
+  .btn-details {
+    display: inline-block; padding: 0.3rem 0.75rem; font-size: 0.8rem;
+    background: #1a3a5c; color: #fff; border-radius: 4px; text-decoration: none; white-space: nowrap;
+  }
+  .btn-details:hover { background: #255480; color: #fff; text-decoration: none; }
+  .btn-export {
+    display: inline-block; padding: 0.35rem 0.9rem; font-size: 0.85rem;
+    background: #2e7d4f; color: #fff; border-radius: 4px; text-decoration: none; white-space: nowrap;
+  }
+  .btn-export:hover { background: #256040; }
+  .btn-toggle-salary {
+    padding: 0.35rem 0.9rem; font-size: 0.85rem; border-radius: 4px; white-space: nowrap;
+    cursor: pointer; border: 1px solid #bcd; background: #fff; color: #1a3a5c;
+  }
+  .btn-toggle-salary.active { background: #1a3a5c; color: #fff; border-color: #1a3a5c; }
+  .btn-toggle-salary:hover { background: #eef3f9; }
+  .btn-toggle-salary.active:hover { background: #255480; }
+  .salary-value { filter: blur(4px); user-select: none; transition: filter 0.2s; }
+  .salary-value.revealed { filter: none; user-select: auto; }
+  thead th[data-col] { cursor: pointer; }
+  thead th[data-col]:hover { background: #255480; }
+  thead th[data-col] .sort-icon { margin-left: 0.4rem; opacity: 0.4; font-size: 0.75rem; }
+  thead th[data-col].asc  .sort-icon { opacity: 1; }
+  thead th[data-col].desc .sort-icon { opacity: 1; }
+</style>
+
+<div class="toolbar">
+  <h2>Employees</h2>
+  <div style="display:flex;align-items:center;gap:0.75rem;">
+    <span class="count">{{ employees|length }} record(s)</span>
+    {% if employees %}
+    <button class="btn-toggle-salary" onclick="toggleSalary(this)">Show Salary</button>
+    <a class="btn-export" href="{{ url_for('export_csv') }}">Export to CSV</a>
+    {% endif %}
+  </div>
+</div>
+
+{% if employees %}
+<div class="table-wrap">
+  <table>
+    <thead>
+      <tr>
+        <th data-col="0">Employee ID <span class="sort-icon">&#8597;</span></th>
+        <th data-col="1">Name <span class="sort-icon">&#8597;</span></th>
+        <th data-col="2">Job Profile <span class="sort-icon">&#8597;</span></th>
+        <th data-col="3">Supervisory Org <span class="sort-icon">&#8597;</span></th>
+        <th data-col="4">Location <span class="sort-icon">&#8597;</span></th>
+        <th id="salary-th" data-col="5" data-sort-disabled="true" style="cursor:default;opacity:0.5;">Annual Salary <span class="sort-icon">&#8597;</span></th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for emp in employees %}
+      <tr>
+        <td><a href="{{ url_for('employee_detail', employee_id=emp.employee_id) }}">{{ emp.employee_id }}</a></td>
+        <td><a href="{{ url_for('employee_detail', employee_id=emp.employee_id) }}">{{ emp.employee_name }}</a></td>
+        <td>{{ emp.job_profile }}</td>
+        <td>{{ emp.supervisor_organization }}</td>
+        <td>{{ emp.location }}</td>
+        <td><span class="salary-value">{{ emp.annual_salary | currency }}</span></td>
+        <td><a class="btn-details" href="{{ url_for('employee_detail', employee_id=emp.employee_id) }}">Details</a></td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<div class="empty">
+  No employees loaded. <a href="{{ url_for('upload') }}">Upload a CSV file</a> to get started.
+</div>
+{% endif %}
+
+<script>
+  const NUMERIC_COLS = new Set([5]);
+
+  function toggleSalary(btn) {
+    const reveal = btn.classList.toggle('active');
+    document.querySelectorAll('.salary-value').forEach(el => el.classList.toggle('revealed', reveal));
+    btn.textContent = reveal ? 'Hide Salary' : 'Show Salary';
+    const salaryTh = document.getElementById('salary-th');
+    salaryTh.dataset.sortDisabled = reveal ? 'false' : 'true';
+    salaryTh.style.cursor = reveal ? '' : 'default';
+    salaryTh.style.opacity = reveal ? '' : '0.5';
+  }
+  let sortCol = -1, sortAsc = true;
+
+  document.querySelectorAll('thead th[data-col]').forEach(th => {
+    th.addEventListener('click', () => {
+      if (th.dataset.sortDisabled === 'true') return;
+      const col = parseInt(th.dataset.col);
+      sortAsc = (sortCol === col) ? !sortAsc : true;
+      sortCol = col;
+      sortTable(col, sortAsc);
+      document.querySelectorAll('thead th[data-col]').forEach(h => {
+        h.classList.remove('asc', 'desc');
+        h.querySelector('.sort-icon').textContent = '↕';
+      });
+      th.classList.add(sortAsc ? 'asc' : 'desc');
+      th.querySelector('.sort-icon').textContent = sortAsc ? '↑' : '↓';
+    });
+  });
+
+  function cellValue(row, col) {
+    return row.querySelectorAll('td')[col].textContent.trim();
+  }
+
+  function sortTable(col, asc) {
+    const tbody = document.querySelector('tbody');
+    const rows = Array.from(tbody.querySelectorAll('tr'));
+    rows.sort((a, b) => {
+      let va = cellValue(a, col), vb = cellValue(b, col);
+      if (NUMERIC_COLS.has(col)) {
+        const na = parseFloat(va.replace(/[^0-9.-]/g, '')) || 0;
+        const nb = parseFloat(vb.replace(/[^0-9.-]/g, '')) || 0;
+        return asc ? na - nb : nb - na;
+      }
+      return asc ? va.localeCompare(vb) : vb.localeCompare(va);
+    });
+    rows.forEach(r => tbody.appendChild(r));
+  }
+</script>
+{% endblock %}

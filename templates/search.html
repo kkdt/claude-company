@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+{% block content %}
+<style>
+  .toolbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; }
+  .toolbar h2 { font-size: 1.2rem; }
+  .toolbar .count { font-size: 0.9rem; color: #666; }
+  .table-wrap { overflow-x: auto; background: #fff; border-radius: 8px; box-shadow: 0 1px 4px rgba(0,0,0,.1); }
+  table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
+  thead tr { background: #1a3a5c; color: #fff; }
+  thead th { padding: 0.7rem 1rem; text-align: left; white-space: nowrap; font-weight: 600; }
+  tbody tr:nth-child(even) { background: #f8fafc; }
+  tbody tr:hover { background: #eef3f9; }
+  tbody td { padding: 0.6rem 1rem; border-bottom: 1px solid #e8ecf0; vertical-align: middle; }
+  tbody td a { color: #1a3a5c; text-decoration: none; }
+  tbody td a:hover { text-decoration: underline; }
+  .btn-details {
+    display: inline-block; padding: 0.3rem 0.75rem; font-size: 0.8rem;
+    background: #1a3a5c; color: #fff; border-radius: 4px; text-decoration: none; white-space: nowrap;
+  }
+  .btn-details:hover { background: #255480; color: #fff; text-decoration: none; }
+  .no-results { text-align: center; padding: 3rem; color: #888; }
+  .query { font-style: italic; color: #1a3a5c; }
+  .btn-toggle-salary {
+    padding: 0.35rem 0.9rem; font-size: 0.85rem; border-radius: 4px; white-space: nowrap;
+    cursor: pointer; border: 1px solid #bcd; background: #fff; color: #1a3a5c;
+  }
+  .btn-toggle-salary.active { background: #1a3a5c; color: #fff; border-color: #1a3a5c; }
+  .btn-toggle-salary:hover { background: #eef3f9; }
+  .btn-toggle-salary.active:hover { background: #255480; }
+  .salary-value { filter: blur(4px); user-select: none; transition: filter 0.2s; }
+  .salary-value.revealed { filter: none; user-select: auto; }
+</style>
+
+<div class="toolbar">
+  <h2>Search results for <span class="query">"{{ query }}"</span></h2>
+  <div style="display:flex;align-items:center;gap:0.75rem;">
+    <span class="count">{{ results|length }} result(s)</span>
+    {% if results %}
+    <button class="btn-toggle-salary" onclick="toggleSalary(this)">Show Salary</button>
+    {% endif %}
+  </div>
+</div>
+
+{% if results %}
+<div class="table-wrap">
+  <table>
+    <thead>
+      <tr>
+        <th>Employee ID</th>
+        <th>Name</th>
+        <th>Job Profile</th>
+        <th>Supervisory Org</th>
+        <th>Location</th>
+        <th>Annual Salary</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for emp in results %}
+      <tr>
+        <td><a href="{{ url_for('employee_detail', employee_id=emp.employee_id, from_search=query) }}">{{ emp.employee_id }}</a></td>
+        <td><a href="{{ url_for('employee_detail', employee_id=emp.employee_id, from_search=query) }}">{{ emp.employee_name }}</a></td>
+        <td>{{ emp.job_profile }}</td>
+        <td>{{ emp.supervisor_organization }}</td>
+        <td>{{ emp.location }}</td>
+        <td><span class="salary-value">{{ emp.annual_salary | currency }}</span></td>
+        <td><a class="btn-details" href="{{ url_for('employee_detail', employee_id=emp.employee_id, from_search=query) }}">Details</a></td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% elif query %}
+<div class="no-results">No employees found matching <span class="query">"{{ query }}"</span>.</div>
+{% endif %}
+
+<script>
+  function toggleSalary(btn) {
+    const reveal = btn.classList.toggle('active');
+    document.querySelectorAll('.salary-value').forEach(el => el.classList.toggle('revealed', reveal));
+    btn.textContent = reveal ? 'Hide Salary' : 'Show Salary';
+  }
+</script>
+{% endblock %}

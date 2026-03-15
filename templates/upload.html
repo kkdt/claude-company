@@ -1,0 +1,299 @@
+{% extends "base.html" %}
+{% block content %}
+<style>
+  .upload-card {
+    background: #fff; border-radius: 8px; box-shadow: 0 1px 4px rgba(0,0,0,.1);
+    padding: 2rem; max-width: 560px; margin-bottom: 1.5rem;
+  }
+  .upload-card h2 { margin-bottom: 0.5rem; font-size: 1.2rem; }
+  .upload-card p { color: #555; font-size: 0.9rem; margin-bottom: 1.5rem; }
+  input[type="file"] {
+    border: 2px dashed #bcd; border-radius: 6px; padding: 1.2rem 1rem;
+    cursor: pointer; font-size: 0.9rem; background: #f8fafc; width: 100%;
+  }
+  .btn-primary {
+    background: #1a3a5c; color: #fff; border: none; border-radius: 5px;
+    padding: 0.65rem 1.5rem; font-size: 1rem; cursor: pointer; margin-top: 1rem;
+  }
+  .btn-primary:hover { background: #255480; }
+  .btn-example {
+    background: none; color: #1a3a5c; border: 1px solid #bcd; border-radius: 5px;
+    padding: 0.65rem 1.5rem; font-size: 1rem; cursor: pointer; margin-top: 1rem; margin-left: 0.75rem;
+  }
+  .btn-example:hover { background: #eef3f9; }
+  .error-msg { color: #b00; font-size: 0.875rem; margin-top: 0.5rem; }
+  .spinner { display: none; font-size: 0.85rem; color: #666; margin-top: 0.75rem; }
+
+  /* Tabs */
+  #results-section { display: none; }
+  .tabs { display: flex; gap: 0; border-bottom: 2px solid #d0dce8; margin-bottom: 1.25rem; }
+  .tab-btn {
+    padding: 0.55rem 1.25rem; font-size: 0.9rem; border: none; background: none;
+    cursor: pointer; color: #666; border-bottom: 2px solid transparent; margin-bottom: -2px;
+  }
+  .tab-btn:hover { color: #1a3a5c; }
+  .tab-btn.active { color: #1a3a5c; font-weight: 600; border-bottom-color: #1a3a5c; }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  /* Preview table */
+  .table-wrap { overflow-x: auto; background: #fff; border-radius: 8px; box-shadow: 0 1px 4px rgba(0,0,0,.1); margin-bottom: 1.25rem; }
+  table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
+  thead tr { background: #1a3a5c; color: #fff; }
+  thead th { padding: 0.5rem 0.75rem; text-align: left; white-space: nowrap; font-weight: 600; }
+  tbody tr:nth-child(even) { background: #f8fafc; }
+  tbody td { padding: 0.45rem 0.75rem; border-bottom: 1px solid #e8ecf0; white-space: nowrap; max-width: 200px; overflow: hidden; text-overflow: ellipsis; }
+  .preview-meta { font-size: 0.85rem; color: #555; margin-bottom: 0.75rem; }
+  .preview-meta strong { color: #222; }
+  .btn-toggle-salary {
+    padding: 0.25rem 0.75rem; font-size: 0.8rem; border-radius: 4px; white-space: nowrap;
+    cursor: pointer; border: 1px solid #bcd; background: #fff; color: #1a3a5c; margin-left: 0.75rem;
+  }
+  .btn-toggle-salary.active { background: #1a3a5c; color: #fff; border-color: #1a3a5c; }
+  .btn-toggle-salary:hover { background: #eef3f9; }
+  .btn-toggle-salary.active:hover { background: #255480; }
+  .salary-value { filter: blur(4px); user-select: none; transition: filter 0.2s; display: inline-block; }
+  .salary-value.revealed { filter: none; user-select: auto; }
+
+  /* Diff summary bar */
+  .diff-summary {
+    display: flex; gap: 1rem; margin-bottom: 1.25rem; flex-wrap: wrap;
+  }
+  .diff-badge {
+    padding: 0.3rem 0.9rem; border-radius: 20px; font-size: 0.82rem; font-weight: 600;
+  }
+  .badge-added   { background: #d4f4e2; color: #1a5c34; }
+  .badge-removed { background: #fdd;    color: #7a1010; }
+  .badge-modified{ background: #fff3cc; color: #6b4c00; }
+  .badge-unchanged{ background: #f0f3f6; color: #555; }
+
+  /* Diff blocks */
+  .diff-section { margin-bottom: 1.5rem; }
+  .diff-section h4 { font-size: 0.9rem; font-weight: 600; margin-bottom: 0.5rem; color: #444; }
+  .diff-block {
+    font-family: monospace; font-size: 0.82rem; border-radius: 6px;
+    overflow: hidden; border: 1px solid #dde; margin-bottom: 0.5rem;
+  }
+  .diff-block-header {
+    padding: 0.4rem 0.75rem; font-weight: 600; font-size: 0.83rem;
+    display: flex; align-items: center; gap: 0.5rem;
+  }
+  .diff-block-header .eid { opacity: 0.65; font-weight: normal; font-size: 0.78rem; }
+  .diff-added-hdr   { background: #d4f4e2; color: #1a5c34; }
+  .diff-removed-hdr { background: #fdd;    color: #7a1010; }
+  .diff-modified-hdr{ background: #fff3cc; color: #6b4c00; }
+  .diff-line { padding: 0.25rem 0.75rem; display: flex; gap: 1rem; }
+  .diff-line-add { background: #eafaf0; color: #1a5c34; }
+  .diff-line-del { background: #fff0f0; color: #7a1010; }
+  .diff-line .sign { width: 1rem; flex-shrink: 0; font-weight: 700; }
+  .diff-line .field-name { color: #888; width: 200px; flex-shrink: 0; }
+  .diff-line .field-val { flex: 1; word-break: break-word; white-space: normal; }
+  .diff-empty { color: #aaa; font-size: 0.85rem; font-style: italic; padding: 0.5rem 0; }
+</style>
+
+<div class="upload-card">
+  <h2>Upload Employee CSV</h2>
+  <p>Select a CSV file to preview changes before importing.</p>
+  <form id="upload-form" action="{{ url_for('do_upload') }}" method="post" enctype="multipart/form-data">
+    <input type="file" id="file-input" name="file" accept=".csv" required>
+    <div class="spinner" id="spinner">Analyzing changes…</div>
+    <div class="error-msg" id="error-msg"></div>
+  </form>
+  <form action="{{ url_for('import_example') }}" method="post" style="display:inline;">
+    <button type="submit" class="btn-example">Import Example</button>
+  </form>
+</div>
+
+<div id="results-section">
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchTab('preview', this)">Preview</button>
+    <button class="tab-btn" id="diff-tab-btn" onclick="switchTab('diff', this)">Changes</button>
+  </div>
+
+  <!-- Preview tab -->
+  <div id="tab-preview" class="tab-panel active">
+    <p class="preview-meta" id="preview-meta"></p>
+    <div class="table-wrap">
+      <table>
+        <thead><tr id="preview-head"></tr></thead>
+        <tbody id="preview-body"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Diff tab -->
+  <div id="tab-diff" class="tab-panel">
+    <div class="diff-summary" id="diff-summary"></div>
+    <div id="diff-added-section"   class="diff-section"></div>
+    <div id="diff-removed-section" class="diff-section"></div>
+    <div id="diff-modified-section"class="diff-section"></div>
+  </div>
+
+  <form action="{{ url_for('do_upload') }}" method="post" enctype="multipart/form-data" id="confirm-form">
+    <input type="file" name="file" id="confirm-file-input" style="display:none">
+    <button type="submit" class="btn-primary">Confirm Import</button>
+  </form>
+</div>
+
+<script>
+  const PREVIEW_COLS  = ['employee_id','employee_name','job_profile','supervisor_organization','location','annual_salary'];
+  const COL_LABELS    = ['Employee ID','Name','Job Profile','Supervisory Org','Location','Annual Salary'];
+  const FIELD_LABELS  = {
+    employee_name:'Name', job_profile:'Job Profile',
+    supervisor_organization:'Supervisory Org', annual_salary:'Annual Salary',
+    hourly_rate:'Hourly Rate', location:'Location',
+    salary_min:'Salary Min', salary_mid:'Salary Mid', salary_max:'Salary Max'
+  };
+
+  function esc(s) {
+    return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  function switchTab(name, btn) {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('tab-' + name).classList.add('active');
+  }
+
+  document.getElementById('file-input').addEventListener('change', async function () {
+    const file = this.files[0];
+    const errorEl = document.getElementById('error-msg');
+    const spinner = document.getElementById('spinner');
+    const section = document.getElementById('results-section');
+
+    errorEl.textContent = '';
+    section.style.display = 'none';
+    if (!file) return;
+    spinner.style.display = 'block';
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+      const resp = await fetch('{{ url_for("preview_upload") }}', { method: 'POST', body: formData });
+      const data = await resp.json();
+      spinner.style.display = 'none';
+      if (data.error) { errorEl.textContent = data.error; return; }
+
+      buildPreview(data);
+      buildDiff(data.diff);
+
+      const dt = new DataTransfer();
+      dt.items.add(file);
+      document.getElementById('confirm-file-input').files = dt.files;
+
+      section.style.display = 'block';
+    } catch (e) {
+      spinner.style.display = 'none';
+      errorEl.textContent = 'Failed to load preview. Please try again.';
+    }
+  });
+
+  function buildPreview(data) {
+    const showing = Math.min(data.rows.length, 10);
+    document.getElementById('preview-meta').innerHTML =
+      `Showing <strong>${showing}</strong> of <strong>${data.total}</strong> employee(s).` +
+      ` <button class="btn-toggle-salary" onclick="togglePreviewSalary(this)">Show Salary</button>`;
+    document.getElementById('preview-head').innerHTML = COL_LABELS.map(l => `<th>${l}</th>`).join('');
+    const SALARY_COL = 'annual_salary';
+    document.getElementById('preview-body').innerHTML = data.rows.map(emp =>
+      '<tr>' + PREVIEW_COLS.map(k => {
+        const val = esc(emp[k]||'');
+        if (k === SALARY_COL) return `<td><span class="salary-value">${val}</span></td>`;
+        return `<td title="${val}">${val}</td>`;
+      }).join('') + '</tr>'
+    ).join('');
+  }
+
+  function togglePreviewSalary(btn) {
+    const reveal = btn.classList.toggle('active');
+    document.querySelectorAll('#tab-preview .salary-value').forEach(el => el.classList.toggle('revealed', reveal));
+    btn.textContent = reveal ? 'Hide Salary' : 'Show Salary';
+  }
+
+  function buildDiff(diff) {
+    const { added, removed, modified, unchanged } = diff;
+    const total = added.length + removed.length + modified.length + unchanged;
+
+    // Summary badges
+    document.getElementById('diff-summary').innerHTML = `
+      <span class="diff-badge badge-added">+${added.length} added</span>
+      <span class="diff-badge badge-removed">-${removed.length} removed</span>
+      <span class="diff-badge badge-modified">~${modified.length} modified</span>
+      <span class="diff-badge badge-unchanged">${unchanged} unchanged</span>`;
+
+    // Update tab label
+    const changeCount = added.length + removed.length + modified.length;
+    document.getElementById('diff-tab-btn').textContent = `Changes (${changeCount})`;
+
+    // Added
+    const addedEl = document.getElementById('diff-added-section');
+    if (added.length) {
+      addedEl.innerHTML = `<h4>Added (${added.length})</h4>` +
+        added.map(emp => `
+          <div class="diff-block">
+            <div class="diff-block-header diff-added-hdr">
+              <span>+ ${esc(emp.employee_name)}</span>
+              <span class="eid">${esc(emp.employee_id)}</span>
+            </div>
+            ${PREVIEW_COLS.filter(k => k !== 'employee_id').map(k => emp[k] ? `
+            <div class="diff-line diff-line-add">
+              <span class="sign">+</span>
+              <span class="field-name">${esc(COL_LABELS[PREVIEW_COLS.indexOf(k)])}</span>
+              <span class="field-val">${esc(emp[k])}</span>
+            </div>` : '').join('')}
+          </div>`).join('');
+    } else {
+      addedEl.innerHTML = '';
+    }
+
+    // Removed
+    const removedEl = document.getElementById('diff-removed-section');
+    if (removed.length) {
+      removedEl.innerHTML = `<h4>Removed (${removed.length})</h4>` +
+        removed.map(emp => `
+          <div class="diff-block">
+            <div class="diff-block-header diff-removed-hdr">
+              <span>- ${esc(emp.employee_name)}</span>
+              <span class="eid">${esc(emp.employee_id)}</span>
+            </div>
+            ${PREVIEW_COLS.filter(k => k !== 'employee_id').map(k => emp[k] ? `
+            <div class="diff-line diff-line-del">
+              <span class="sign">-</span>
+              <span class="field-name">${esc(COL_LABELS[PREVIEW_COLS.indexOf(k)])}</span>
+              <span class="field-val">${esc(emp[k])}</span>
+            </div>` : '').join('')}
+          </div>`).join('');
+    } else {
+      removedEl.innerHTML = '';
+    }
+
+    // Modified
+    const modifiedEl = document.getElementById('diff-modified-section');
+    if (modified.length) {
+      modifiedEl.innerHTML = `<h4>Modified (${modified.length})</h4>` +
+        modified.map(emp => `
+          <div class="diff-block">
+            <div class="diff-block-header diff-modified-hdr">
+              <span>~ ${esc(emp.employee_name)}</span>
+              <span class="eid">${esc(emp.employee_id)}</span>
+            </div>
+            ${emp.changes.map(c => `
+            <div class="diff-line diff-line-del">
+              <span class="sign">-</span>
+              <span class="field-name">${esc(FIELD_LABELS[c.field] || c.field)}</span>
+              <span class="field-val">${esc(c.old)}</span>
+            </div>
+            <div class="diff-line diff-line-add">
+              <span class="sign">+</span>
+              <span class="field-name">${esc(FIELD_LABELS[c.field] || c.field)}</span>
+              <span class="field-val">${esc(c.new)}</span>
+            </div>`).join('')}
+          </div>`).join('');
+    } else {
+      modifiedEl.innerHTML = '';
+    }
+  }
+</script>
+{% endblock %}

@@ -1,10 +1,32 @@
-.vagrant
+# OS
 .DS_Store
-.gradle
+.vagrant
+
+# Editor
+.idea/
+*.iml
+*.swp
 .settings
 .project
 .classpath
-*.iml
+
+# Java/Gradle
+.gradle
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.venv/
+venv/
+env/
+*.egg-info/
+dist/
+build/
+
+# App
 *.log
-*.swp
-.idea/
+data/employees.json
+
+# Claude
+.claude/settings.local.json

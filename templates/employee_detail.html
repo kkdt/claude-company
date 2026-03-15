@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+{% block content %}
+<style>
+  .back { margin-bottom: 1.25rem; }
+  .back a { color: #1a3a5c; text-decoration: none; font-size: 0.9rem; }
+  .back a:hover { text-decoration: underline; }
+  .detail-header { margin-bottom: 1.5rem; }
+  .detail-header h2 { font-size: 1.4rem; }
+  .detail-header p { color: #555; font-size: 0.9rem; margin-top: 0.25rem; }
+  .section {
+    background: #fff; border-radius: 8px; box-shadow: 0 1px 4px rgba(0,0,0,.1);
+    padding: 1.5rem; margin-bottom: 1.5rem;
+  }
+  .section h3 { font-size: 1rem; color: #1a3a5c; margin-bottom: 1rem; border-bottom: 1px solid #e8ecf0; padding-bottom: 0.5rem; }
+  .fields { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 0.75rem 1.5rem; }
+  .field label { display: block; font-size: 0.75rem; font-weight: 600; color: #888; text-transform: uppercase; letter-spacing: 0.04em; }
+  .field span { display: block; font-size: 0.95rem; color: #222; margin-top: 0.15rem; }
+  .field span.empty { color: #bbb; font-style: italic; }
+  .attr-table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
+  .attr-table th { text-align: left; padding: 0.5rem 0.75rem; background: #f4f6f9; font-weight: 600; color: #555; width: 40%; }
+  .attr-table td { padding: 0.5rem 0.75rem; border-top: 1px solid #e8ecf0; color: #222; }
+  .attr-table tr:first-child th,
+  .attr-table tr:first-child td { border-top: none; }
+</style>
+
+<div class="back">
+  {% if request.args.get('from_search') %}
+    <a href="{{ url_for('search', q=request.args.get('from_search')) }}">&larr; Back to Search Results</a>
+  {% else %}
+    <a href="{{ url_for('employees') }}">&larr; Back to Employees</a>
+  {% endif %}
+</div>
+
+<div class="detail-header">
+  <h2>{{ employee.employee_name }}</h2>
+  <p>{{ employee.employee_id }} &mdash; {{ employee.job_profile }}</p>
+</div>
+
+<div class="section">
+  <h3>Core Details</h3>
+  <div class="fields">
+    <div class="field">
+      <label>Employee ID</label>
+      <span>{{ employee.employee_id or '' }}{% if not employee.employee_id %}<span class="empty">—</span>{% endif %}</span>
+    </div>
+    <div class="field">
+      <label>Name</label>
+      <span>{{ employee.employee_name or '' }}{% if not employee.employee_name %}<span class="empty">—</span>{% endif %}</span>
+    </div>
+    <div class="field">
+      <label>Job Profile</label>
+      <span>{{ employee.job_profile or '' }}{% if not employee.job_profile %}<span class="empty">—</span>{% endif %}</span>
+    </div>
+    <div class="field">
+      <label>Supervisory Organization</label>
+      {% if supervisor %}
+        <span><a href="{{ url_for('employee_detail', employee_id=supervisor.employee_id) }}" style="color:#1a3a5c;">{{ supervisor.employee_name }}</a>
+        <small style="color:#888;">({{ employee.supervisor_organization }})</small></span>
+      {% else %}
+        <span>{{ employee.supervisor_organization or '' }}{% if not employee.supervisor_organization %}<span class="empty">—</span>{% endif %}</span>
+      {% endif %}
+    </div>
+    <div class="field">
+      <label>Location</label>
+      <span>{{ employee.location or '' }}{% if not employee.location %}<span class="empty">—</span>{% endif %}</span>
+    </div>
+    <div class="field">
+      <label>Annual Salary</label>
+      <span>{{ employee.annual_salary or '' }}{% if not employee.annual_salary %}<span class="empty">—</span>{% endif %}</span>
+    </div>
+    <div class="field">
+      <label>Hourly Rate</label>
+      <span>{% if employee.hourly_rate %}{{ employee.hourly_rate | currency }}{% else %}<span class="empty">—</span>{% endif %}</span>
+    </div>
+    <div class="field">
+      <label>Salary Min</label>
+      <span>{% if employee.salary_min %}{{ employee.salary_min | currency }}{% else %}<span class="empty">—</span>{% endif %}</span>
+    </div>
+    <div class="field">
+      <label>Salary Midpoint</label>
+      <span>{% if employee.salary_mid %}{{ employee.salary_mid | currency }}{% else %}<span class="empty">—</span>{% endif %}</span>
+    </div>
+    <div class="field">
+      <label>Salary Max</label>
+      <span>{% if employee.salary_max %}{{ employee.salary_max | currency }}{% else %}<span class="empty">—</span>{% endif %}</span>
+    </div>
+  </div>
+</div>
+
+{% if employee.attributes %}
+<div class="section">
+  <h3>Attributes</h3>
+  <table class="attr-table">
+    {% for attr in employee.attributes %}
+    <tr>
+      <th>{{ attr.key }}</th>
+      <td>{% if attr.value %}{{ attr.value }}{% else %}<span style="color:#bbb;font-style:italic">—</span>{% endif %}</td>
+    </tr>
+    {% endfor %}
+  </table>
+</div>
+{% endif %}
+{% endblock %}
