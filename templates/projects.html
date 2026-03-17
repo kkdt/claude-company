@@ -76,6 +76,18 @@
   <span style="font-size:0.9rem;color:#666;">{{ projects|length }} project(s)</span>
 </div>
 
+<!-- Import from CSV -->
+<div class="panel">
+  <h3>Import from CSV</h3>
+  <form method="post" action="{{ url_for('projects_upload') }}" enctype="multipart/form-data">
+    <div class="upload-row">
+      <input type="file" name="file" accept=".csv" required>
+      <button type="submit" class="btn-primary">Import</button>
+    </div>
+  </form>
+  <p class="hint">CSV must include a "Project" column. Optional: "Description", "Color". Any other columns become attributes.</p>
+</div>
+
 <!-- Create project form -->
 <div class="panel">
   <h3>Create Project</h3>
@@ -89,6 +101,10 @@
         <label for="project_description">Description</label>
         <input type="text" id="project_description" name="project_description" placeholder="Optional description" style="width:340px;">
       </div>
+      <div class="form-group">
+        <label for="project_color">Color</label>
+        <input type="color" id="project_color" name="project_color" value="#1a3a5c" style="width:48px;height:34px;padding:2px;border:1px solid #ccd;border-radius:4px;cursor:pointer;background:#f9fafc;">
+      </div>
     </div>
 
     <div class="attrs-label">Attributes</div>
@@ -100,23 +116,12 @@
   </form>
 </div>
 
-<!-- Import from CSV -->
-<div class="panel">
-  <h3>Import from CSV</h3>
-  <form method="post" action="{{ url_for('projects_upload') }}" enctype="multipart/form-data">
-    <div class="upload-row">
-      <input type="file" name="file" accept=".csv" required>
-      <button type="submit" class="btn-primary">Import</button>
-    </div>
-  </form>
-  <p class="hint">CSV must include a "Project" column. Optional: "Description". Any other columns become attributes.</p>
-</div>
-
 {% if projects %}
 <div class="table-wrap">
   <table>
     <thead>
       <tr>
+        <th></th>
         <th>Project ID</th>
         <th>Description</th>
         <th></th>
@@ -125,6 +130,11 @@
     <tbody>
       {% for project in projects %}
       <tr>
+        <td style="width:32px;padding-right:0;">
+          {% if project.project_color %}
+          <span style="display:inline-block;width:16px;height:16px;border-radius:50%;background:{{ project.project_color }};border:1px solid rgba(0,0,0,.15);vertical-align:middle;"></span>
+          {% endif %}
+        </td>
         <td>{{ project.project_id }}</td>
         <td>{{ project.project_description or '—' }}</td>
         <td>

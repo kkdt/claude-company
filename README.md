@@ -139,3 +139,7 @@ podman run --rm \
 7. Add Supervisory Organization filter in Monthly staffing screen — Added client-side filter dropdown above the matrix populated from unique supervisor_organization values; filters rows instantly by org with a live count display.
 8. Add secondary navigation to Staffing with 1 item linking to current Staffing page — Added single-item subnav ("Staffing") to staffing.html (active) and staffing_month.html (inactive); replaced back link.
 9. Add Projections to Staffing navigation — tabular view with months as columns, employees as rows — Added GET /staffing/projections route and staffing_projections.html: employees as rows, current+future months as columns, project ID badges in each cell, Edit → links per month header. Added "Projections" to subnav on all Staffing pages.
+  months as columns, project ID badges per cell, Edit → links per month header. Added "Projections" to subnav on all Staffing pages.
+10. Add a color picker to Projects, JSON key is optional "Color" — Added <input type="color"> to create form; saved as color key; color swatch in projects table; header background and field row in project
+detail.
+11. Update Project CSV import to map "Color" header to project_color — Added "Color": "project_color" to PROJECT_FIELD_MAP.

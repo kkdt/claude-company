@@ -15,6 +15,7 @@ STAFFING_PATH = os.path.join(os.path.dirname(__file__), "data", "staffing.json")
 PROJECT_FIELD_MAP = {
     "Project": "project_id",
     "Description": "project_description",
+    "Color": "project_color",
 }
 
 FIELD_MAP = {
@@ -396,10 +397,12 @@ def projects_create():
     if any(p.get("project_id") == project_id for p in all_projects):
         flash(f"Project '{project_id}' already exists.")
         return redirect(url_for("projects"))
+    project_color = request.form.get("project_color", "").strip()
     keys = request.form.getlist("attr_key")
     values = request.form.getlist("attr_value")
     attributes = [{"key": k.strip(), "value": v.strip()} for k, v in zip(keys, values) if k.strip()]
-    all_projects.append({"project_id": project_id, "project_description": project_description, "attributes": attributes})
+    project = {"project_id": project_id, "project_description": project_description, "project_color": project_color, "attributes": attributes}
+    all_projects.append(project)
     save_projects(all_projects)
     flash(f"Project '{project_id}' created.")
     return redirect(url_for("projects"))

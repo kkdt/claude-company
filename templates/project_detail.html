@@ -44,7 +44,7 @@
 <a class="back-link" href="{{ url_for('projects') }}">← Back to Projects</a>
 
 <div class="detail-card">
-  <div class="detail-header">
+  <div class="detail-header" {% if project.project_color %}style="background:{{ project.project_color }};"{% endif %}>
     <h2>{{ project.project_id }}</h2>
     <div class="actions">
       <form method="post" action="{{ url_for('projects_delete', project_id=project.project_id) }}"
@@ -57,6 +57,19 @@
     <div class="field-row">
       <div class="field-label">Project ID</div>
       <div class="field-value">{{ project.project_id }}</div>
+    </div>
+    <div class="field-row">
+      <div class="field-label">Color</div>
+      <div class="field-value">
+        {% if project.project_color %}
+        <span style="display:inline-flex;align-items:center;gap:0.5rem;">
+          <span style="display:inline-block;width:18px;height:18px;border-radius:50%;background:{{ project.project_color }};border:1px solid rgba(0,0,0,.15);"></span>
+          {{ project.project_color }}
+        </span>
+        {% else %}
+        <span class="empty">No color set</span>
+        {% endif %}
+      </div>
     </div>
     <div class="field-row">
       <div class="field-label">Description</div>
