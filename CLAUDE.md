@@ -44,6 +44,12 @@ All other CSV headers maps to a JSON key `attributes` that is a JSON list of tup
 
 5. Projects - Manage projects
 
+6. Staffing - Manage monthly staffing profiles for projects
+
+    - An employee is matrixed across different projects
+    - An employee can support multiple projects in a single month
+    - Screens to project staffing assignments for future months while preserving past assignments in JSON format
+
 ## Application Deployment
 
 The application will run on port 8080.
