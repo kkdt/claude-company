@@ -148,3 +148,6 @@ months as columns, project ID badges per cell, Edit → links per month header. 
 15. Remove Job Profile column from Staffing Projections — Removed <th> and <td> for Job Profile from the matrix table.
 16. Include Supervisory Organization dropdown filter in Staffing Projections — Client-side filter bar above matrix with live count.
 17. Format Staffing Projections columns "YYYY-MM" — Changed from MM YYYY to YYYY-MM in column headers and modal labels.
+18. Color code project tags in Staffing Projections — Tags in matrix table and modal colored via project_color; luminance-based text contrast.                                                                   
+19. Add quick filters for projects in Staffing Projections — Project pill buttons toggle row visibility; combines with org filter; live count.                                                                   
+20. Add clear all project filters — Clear button appears when any project filter is active; hides when none selected.                                                                                            

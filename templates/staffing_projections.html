@@ -53,6 +53,19 @@
   }
   .filter-bar select:focus { outline: none; border-color: #1a3a5c; }
   .filter-count { font-size: 0.8rem; color: #888; }
+  .proj-filter-bar {
+    background: #fff; border-radius: 8px; box-shadow: 0 1px 4px rgba(0,0,0,.1);
+    padding: 0.75rem 1.25rem; margin-bottom: 1rem;
+    display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;
+  }
+  .proj-filter-bar label { font-size: 0.8rem; font-weight: 600; color: #555; white-space: nowrap; margin-right: 0.25rem; }
+  .proj-filter-btn {
+    padding: 0.25rem 0.75rem; border-radius: 999px; border: 2px solid transparent;
+    font-size: 0.78rem; font-weight: 600; cursor: pointer; background: #e8f0fe; color: #1a3a5c;
+    transition: opacity .15s, box-shadow .15s;
+  }
+  .proj-filter-btn:hover { opacity: 0.85; }
+  .proj-filter-btn.active { border-color: rgba(0,0,0,.35); box-shadow: 0 0 0 2px rgba(0,0,0,.15); }
 
   /* Modal */
   .modal-backdrop {
@@ -119,11 +132,26 @@ const EMPLOYEE_DATA = {
   }{% if not loop.last %},{% endif %}
   {% endfor %}
 };
-const PROJ_DESCRIPTIONS = {
+const PROJ_META = {
   {% for pid, proj in proj_map.items() %}
-  {{ pid | tojson }}: {{ (proj.project_description or '') | tojson }}{% if not loop.last %},{% endif %}
+  {{ pid | tojson }}: {
+    "description": {{ (proj.project_description or '') | tojson }},
+    "color": {{ (proj.project_color or '') | tojson }}
+  }{% if not loop.last %},{% endif %}
   {% endfor %}
 };
+
+function projTagStyle(pid) {
+  const color = (PROJ_META[pid] || {}).color;
+  if (!color) return '';
+  // Compute relative luminance to pick contrasting text color
+  const r = parseInt(color.slice(1,3), 16) / 255;
+  const g = parseInt(color.slice(3,5), 16) / 255;
+  const b = parseInt(color.slice(5,7), 16) / 255;
+  const lum = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+  const text = lum > 0.45 ? '#222' : '#fff';
+  return `background:${color};color:${text};`;
+}
 </script>
 
 <div class="subnav">
@@ -149,7 +177,7 @@ const PROJ_DESCRIPTIONS = {
 {% set orgs = employees | map(attribute='supervisor_organization') | select | unique | sort | list %}
 <div class="filter-bar">
   <label for="org-filter">Supervisory Org</label>
-  <select id="org-filter" onchange="filterByOrg(this.value)">
+  <select id="org-filter" onchange="applyFilters()">
     <option value="">— All —</option>
     {% for org in orgs %}
     <option value="{{ org }}">{{ org }}</option>
@@ -157,6 +185,24 @@ const PROJ_DESCRIPTIONS = {
   </select>
   <span class="filter-count" id="filter-count"></span>
 </div>
+
+{% if proj_map %}
+<div class="proj-filter-bar">
+  <label>Project</label>
+  {% for pid, proj in proj_map.items() | sort %}
+  {% set pc = proj.project_color or '' %}
+  <button type="button" class="proj-filter-btn" data-pid="{{ pid }}"
+    onclick="toggleProjFilter('{{ pid }}')"
+    {% if pc %}style="background:{{ pc }};color:{{ 'white' }};"{% endif %}>
+    {{ pid }}
+  </button>
+  {% endfor %}
+  <button type="button" id="clear-proj-filters" onclick="clearProjFilters()"
+    style="display:none;padding:0.25rem 0.75rem;border-radius:4px;border:1px solid #ccd;background:#fff;color:#666;font-size:0.78rem;cursor:pointer;margin-left:0.25rem;">
+    Clear
+  </button>
+</div>
+{% endif %}
 
 <div class="matrix-wrap">
   <table>
@@ -176,7 +222,9 @@ const PROJ_DESCRIPTIONS = {
     <tbody>
       {% for emp in employees | sort(attribute='employee_name') %}
       {% set eid = emp.employee_id %}
-      <tr data-org="{{ emp.supervisor_organization or '' }}">
+      {% set all_projs = [] %}
+      {% for yr, mo in months %}{% for pid in month_assignments.get((yr, mo), {}).get(eid, []) %}{% if pid not in all_projs %}{% set _ = all_projs.append(pid) %}{% endif %}{% endfor %}{% endfor %}
+      <tr data-org="{{ emp.supervisor_organization or '' }}" data-projects="{{ all_projs | join(',') }}">
         <td>
           <div class="emp-name">
             <button class="emp-btn" onclick="openModal('{{ eid }}')">{{ emp.employee_name }}</button>
@@ -188,7 +236,10 @@ const PROJ_DESCRIPTIONS = {
         <td class="month-cell">
           {% if projs %}
             {% for pid in projs | sort %}
-            <span class="proj-tag" title="{{ proj_map.get(pid, {}).get('project_description', '') }}">{{ pid }}</span>
+            {% set pc = proj_map.get(pid, {}).get('project_color', '') %}
+            <span class="proj-tag"
+              title="{{ proj_map.get(pid, {}).get('project_description', '') }}"
+              {% if pc %}data-color="{{ pc }}"{% endif %}>{{ pid }}</span>
             {% endfor %}
           {% else %}
             <span class="cell-empty">—</span>
@@ -225,16 +276,53 @@ const PROJ_DESCRIPTIONS = {
 {% endif %}
 
 <script>
-  function filterByOrg(org) {
+  // Apply project colors to table tags and filter buttons on load
+  document.querySelectorAll('.proj-tag[data-color]').forEach(tag => {
+    const style = projTagStyle(tag.textContent.trim());
+    if (style) tag.style.cssText = style;
+  });
+  document.querySelectorAll('.proj-filter-btn[data-pid]').forEach(btn => {
+    const style = projTagStyle(btn.dataset.pid);
+    if (style) btn.style.cssText = style;
+  });
+
+  const activeProjects = new Set();
+
+  function toggleProjFilter(pid) {
+    if (activeProjects.has(pid)) {
+      activeProjects.delete(pid);
+    } else {
+      activeProjects.add(pid);
+    }
+    document.querySelectorAll('.proj-filter-btn').forEach(btn => {
+      btn.classList.toggle('active', activeProjects.has(btn.dataset.pid));
+    });
+    document.getElementById('clear-proj-filters').style.display = activeProjects.size > 0 ? '' : 'none';
+    applyFilters();
+  }
+
+  function clearProjFilters() {
+    activeProjects.clear();
+    document.querySelectorAll('.proj-filter-btn').forEach(btn => btn.classList.remove('active'));
+    document.getElementById('clear-proj-filters').style.display = 'none';
+    applyFilters();
+  }
+
+  function applyFilters() {
+    const org = document.getElementById('org-filter').value;
     const rows = document.querySelectorAll('tbody tr');
     let visible = 0;
     rows.forEach(row => {
-      const match = !org || row.dataset.org === org;
-      row.style.display = match ? '' : 'none';
-      if (match) visible++;
+      const orgMatch = !org || row.dataset.org === org;
+      const rowProjs = new Set((row.dataset.projects || '').split(',').filter(Boolean));
+      const projMatch = activeProjects.size === 0 || [...activeProjects].some(pid => rowProjs.has(pid));
+      const show = orgMatch && projMatch;
+      row.style.display = show ? '' : 'none';
+      if (show) visible++;
     });
     const count = document.getElementById('filter-count');
-    count.textContent = org ? `${visible} of ${rows.length} employee(s)` : '';
+    const anyFilter = org || activeProjects.size > 0;
+    count.textContent = anyFilter ? `${visible} of ${rows.length} employee(s)` : '';
   }
 
   function openModal(eid) {
@@ -265,8 +353,10 @@ const PROJ_DESCRIPTIONS = {
           const tag = document.createElement('span');
           tag.className = 'proj-tag';
           tag.textContent = pid;
-          const desc = PROJ_DESCRIPTIONS[pid];
-          if (desc) tag.title = desc;
+          const meta = PROJ_META[pid] || {};
+          if (meta.description) tag.title = meta.description;
+          const s = projTagStyle(pid);
+          if (s) tag.style.cssText = s;
           tags.appendChild(tag);
         });
       } else {
