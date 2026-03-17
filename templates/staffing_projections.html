@@ -24,8 +24,11 @@
   tbody td.month-cell { text-align: center; vertical-align: middle; }
   .emp-name { font-weight: 500; }
   .emp-meta { font-size: 0.78rem; color: #888; }
-  .emp-name a { color: #1a3a5c; text-decoration: none; }
-  .emp-name a:hover { text-decoration: underline; }
+  .emp-btn {
+    background: none; border: none; padding: 0; cursor: pointer; text-align: left;
+    color: #1a3a5c; font-weight: 500; font-size: inherit; font-family: inherit;
+  }
+  .emp-btn:hover { text-decoration: underline; }
 
   .proj-tag {
     display: inline-block; margin: 2px; padding: 0.15rem 0.5rem;
@@ -38,9 +41,78 @@
   .month-link:hover { color: #fff; text-decoration: underline; }
 
   .empty { text-align: center; padding: 3rem; color: #888; }
+
+  /* Modal */
+  .modal-backdrop {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,.45); z-index: 1000; align-items: center; justify-content: center;
+  }
+  .modal-backdrop.open { display: flex; }
+  .modal {
+    background: #fff; border-radius: 10px; box-shadow: 0 8px 32px rgba(0,0,0,.2);
+    width: 520px; max-width: 95vw; max-height: 85vh; overflow-y: auto;
+  }
+  .modal-header {
+    background: #1a3a5c; color: #fff; padding: 1rem 1.25rem;
+    display: flex; align-items: center; justify-content: space-between;
+    border-radius: 10px 10px 0 0;
+  }
+  .modal-header h3 { font-size: 1rem; font-weight: 600; }
+  .modal-close {
+    background: none; border: none; color: #fff; font-size: 1.25rem;
+    cursor: pointer; line-height: 1; padding: 0 0.25rem; opacity: 0.8;
+  }
+  .modal-close:hover { opacity: 1; }
+  .modal-body { padding: 1.25rem; }
+  .modal-meta { font-size: 0.85rem; color: #666; margin-bottom: 1.25rem; }
+  .modal-section { font-size: 0.75rem; font-weight: 700; color: #1a3a5c; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.6rem; }
+  .modal-month-row {
+    display: flex; align-items: flex-start; gap: 0.75rem;
+    padding: 0.5rem 0; border-bottom: 1px solid #eef;
+  }
+  .modal-month-row:last-child { border-bottom: none; }
+  .modal-month-label { width: 130px; flex-shrink: 0; font-size: 0.855rem; font-weight: 600; color: #333; }
+  .modal-month-tags { display: flex; flex-wrap: wrap; gap: 4px; }
+  .modal-none { font-size: 0.82rem; color: #bbb; font-style: italic; }
+  .modal-footer { padding: 0.85rem 1.25rem; border-top: 1px solid #eef; text-align: right; }
+  .btn-view-profile {
+    display: inline-block; padding: 0.4rem 1rem; font-size: 0.875rem;
+    background: #1a3a5c; color: #fff; border-radius: 4px; text-decoration: none;
+  }
+  .btn-view-profile:hover { background: #255480; color: #fff; text-decoration: none; }
 </style>
 
 {% set MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'] %}
+
+{# Embed all employee projection data for the modal as JSON #}
+<script>
+const EMPLOYEE_DATA = {
+  {% for emp in employees | sort(attribute='employee_name') %}
+  {% set eid = emp.employee_id %}
+  "{{ eid }}": {
+    "name": {{ emp.employee_name | tojson }},
+    "id": {{ eid | tojson }},
+    "job_profile": {{ emp.job_profile | tojson }},
+    "location": {{ emp.location | tojson }},
+    "supervisor_organization": {{ emp.supervisor_organization | tojson }},
+    "url": "{{ url_for('employee_detail', employee_id=eid) }}",
+    "months": [
+      {% for yr, mo in months %}
+      {
+        "label": "{{ '%02d'|format(mo) }} {{ yr }}",
+        "projects": {{ month_assignments.get((yr, mo), {}).get(eid, []) | sort | tojson }}
+      }{% if not loop.last %},{% endif %}
+      {% endfor %}
+    ]
+  }{% if not loop.last %},{% endif %}
+  {% endfor %}
+};
+const PROJ_DESCRIPTIONS = {
+  {% for pid, proj in proj_map.items() %}
+  {{ pid | tojson }}: {{ (proj.project_description or '') | tojson }}{% if not loop.last %},{% endif %}
+  {% endfor %}
+};
+</script>
 
 <div class="subnav">
   <a href="{{ url_for('staffing') }}">Staffing</a>
@@ -67,11 +139,10 @@
     <thead>
       <tr>
         <th>Employee</th>
-        <th>Job Profile</th>
         {% for yr, mo in months %}
         {% set is_cur = (yr == today_year and mo == today_month) %}
         <th class="month-col {% if is_cur %}is-current{% endif %}">
-          {{ MONTHS[mo-1] }} {{ yr }}
+          {{ '%02d'|format(mo) }} {{ yr }}
           {% if is_cur %}<span style="font-size:0.7rem;opacity:0.7;display:block;">Current</span>{% endif %}
           <a class="month-link" href="{{ url_for('staffing_month', year=yr, month=mo) }}">Edit →</a>
         </th>
@@ -83,10 +154,11 @@
       {% set eid = emp.employee_id %}
       <tr>
         <td>
-          <div class="emp-name"><a href="{{ url_for('employee_detail', employee_id=eid) }}">{{ emp.employee_name }}</a></div>
+          <div class="emp-name">
+            <button class="emp-btn" onclick="openModal('{{ eid }}')">{{ emp.employee_name }}</button>
+          </div>
           <div class="emp-meta">{{ eid }}</div>
         </td>
-        <td>{{ emp.job_profile }}</td>
         {% for yr, mo in months %}
         {% set projs = month_assignments.get((yr, mo), {}).get(eid, []) %}
         <td class="month-cell">
@@ -104,5 +176,88 @@
     </tbody>
   </table>
 </div>
+
+<!-- Modal -->
+<div class="modal-backdrop" id="modal-backdrop" onclick="closeOnBackdrop(event)">
+  <div class="modal" role="dialog" aria-modal="true">
+    <div class="modal-header" id="modal-header">
+      <h3 id="modal-name"></h3>
+      <button class="modal-close" onclick="closeModal()" aria-label="Close">&#x2715;</button>
+    </div>
+    <div class="modal-body">
+      <div class="modal-meta" id="modal-meta"></div>
+      <div class="modal-supervisor-row" style="font-size:0.85rem;color:#555;margin-bottom:1.25rem;">
+        <span style="font-weight:600;color:#333;">Supervisory Org:</span>
+        <span id="modal-supervisor"></span>
+      </div>
+      <div class="modal-section">Project Assignments by Month</div>
+      <div id="modal-months"></div>
+    </div>
+    <div class="modal-footer">
+      <a id="modal-profile-link" class="btn-view-profile" href="#">View Full Profile</a>
+    </div>
+  </div>
+</div>
 {% endif %}
+
+<script>
+  function openModal(eid) {
+    const emp = EMPLOYEE_DATA[eid];
+    if (!emp) return;
+
+    document.getElementById('modal-name').textContent = emp.name;
+    document.getElementById('modal-meta').textContent =
+      emp.job_profile + (emp.location ? '  ·  ' + emp.location : '') + '  ·  ' + emp.id;
+    const supEl = document.getElementById('modal-supervisor');
+    supEl.textContent = emp.supervisor_organization || '—';
+    supEl.closest('.modal-supervisor-row').style.display = emp.supervisor_organization ? '' : 'none';
+    document.getElementById('modal-profile-link').href = emp.url;
+
+    const container = document.getElementById('modal-months');
+    container.innerHTML = '';
+    emp.months.forEach(m => {
+      const row = document.createElement('div');
+      row.className = 'modal-month-row';
+      const label = document.createElement('div');
+      label.className = 'modal-month-label';
+      label.textContent = m.label;
+      row.appendChild(label);
+      const tags = document.createElement('div');
+      tags.className = 'modal-month-tags';
+      if (m.projects.length) {
+        m.projects.forEach(pid => {
+          const tag = document.createElement('span');
+          tag.className = 'proj-tag';
+          tag.textContent = pid;
+          const desc = PROJ_DESCRIPTIONS[pid];
+          if (desc) tag.title = desc;
+          tags.appendChild(tag);
+        });
+      } else {
+        const none = document.createElement('span');
+        none.className = 'modal-none';
+        none.textContent = 'No assignments';
+        tags.appendChild(none);
+      }
+      row.appendChild(tags);
+      container.appendChild(row);
+    });
+
+    document.getElementById('modal-backdrop').classList.add('open');
+    document.addEventListener('keydown', escListener);
+  }
+
+  function closeModal() {
+    document.getElementById('modal-backdrop').classList.remove('open');
+    document.removeEventListener('keydown', escListener);
+  }
+
+  function closeOnBackdrop(e) {
+    if (e.target === document.getElementById('modal-backdrop')) closeModal();
+  }
+
+  function escListener(e) {
+    if (e.key === 'Escape') closeModal();
+  }
+</script>
 {% endblock %}

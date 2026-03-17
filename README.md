@@ -143,3 +143,7 @@ podman run --rm \
 10. Add a color picker to Projects, JSON key is optional "Color" — Added <input type="color"> to create form; saved as color key; color swatch in projects table; header background and field row in project
 detail.
 11. Update Project CSV import to map "Color" header to project_color — Added "Color": "project_color" to PROJECT_FIELD_MAP.
+12. Show employee modal in Staffing Projections — Employee names became buttons opening a modal showing job profile, location, employee ID, and per-month project assignments.
+13. Include Supervisory Organization in employee modal — Added supervisor_organization to JS data and modal body.
+14. Format Staffing Projections columns "MM YYYY" — Column headers and modal month labels changed from full month name to zero-padded MM YYYY.
+15. Remove Job Profile column from Staffing Projections — Removed <th> and <td> for Job Profile from the matrix table.
