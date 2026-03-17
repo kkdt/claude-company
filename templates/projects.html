@@ -1,0 +1,155 @@
+{% extends "base.html" %}
+{% block content %}
+<style>
+  .toolbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.25rem; }
+  .toolbar h2 { font-size: 1.2rem; }
+  .panel {
+    background: #fff; border-radius: 8px; box-shadow: 0 1px 4px rgba(0,0,0,.1);
+    padding: 1.25rem 1.5rem; margin-bottom: 1.5rem;
+  }
+  .panel h3 { font-size: 1rem; margin-bottom: 1rem; color: #1a3a5c; }
+  .form-row { display: flex; gap: 0.75rem; align-items: flex-end; flex-wrap: wrap; margin-bottom: 1rem; }
+  .form-group { display: flex; flex-direction: column; gap: 0.3rem; }
+  .form-group label { font-size: 0.8rem; font-weight: 600; color: #555; }
+  .form-group input {
+    padding: 0.4rem 0.65rem; border: 1px solid #ccd; border-radius: 4px;
+    font-size: 0.875rem; background: #f9fafc;
+  }
+  .form-group input:focus { outline: none; border-color: #1a3a5c; background: #fff; }
+  .btn-primary {
+    padding: 0.4rem 1rem; font-size: 0.875rem; background: #1a3a5c; color: #fff;
+    border: none; border-radius: 4px; cursor: pointer; white-space: nowrap;
+  }
+  .btn-primary:hover { background: #255480; }
+  .btn-secondary {
+    padding: 0.35rem 0.85rem; font-size: 0.85rem; background: #fff; color: #1a3a5c;
+    border: 1px solid #1a3a5c; border-radius: 4px; cursor: pointer; white-space: nowrap;
+  }
+  .btn-secondary:hover { background: #eef3f9; }
+  .btn-danger {
+    padding: 0.25rem 0.65rem; font-size: 0.8rem; background: #c0392b; color: #fff;
+    border: none; border-radius: 4px; cursor: pointer;
+  }
+  .btn-danger:hover { background: #a93226; }
+  .btn-details {
+    display: inline-block; padding: 0.3rem 0.75rem; font-size: 0.8rem;
+    background: #1a3a5c; color: #fff; border-radius: 4px; text-decoration: none; white-space: nowrap;
+  }
+  .btn-details:hover { background: #255480; color: #fff; text-decoration: none; }
+  .btn-icon {
+    padding: 0.25rem 0.5rem; font-size: 0.85rem; background: none; border: none;
+    cursor: pointer; color: #c0392b; line-height: 1;
+  }
+  .btn-icon:hover { color: #a93226; }
+
+  /* Attributes builder */
+  .attrs-label { font-size: 0.8rem; font-weight: 600; color: #555; margin-bottom: 0.5rem; }
+  .attr-row { display: flex; gap: 0.5rem; align-items: center; margin-bottom: 0.4rem; }
+  .attr-row input { padding: 0.35rem 0.6rem; border: 1px solid #ccd; border-radius: 4px; font-size: 0.855rem; background: #f9fafc; }
+  .attr-row input:focus { outline: none; border-color: #1a3a5c; background: #fff; }
+  .attr-key { width: 180px; }
+  .attr-val { width: 260px; }
+  .attrs-sep { border: none; border-top: 1px solid #e8ecf0; margin: 1rem 0; }
+
+  /* Upload strip */
+  .upload-row { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; }
+  .upload-row input[type="file"] { font-size: 0.875rem; }
+  .hint { font-size: 0.8rem; color: #888; margin-top: 0.4rem; }
+
+  /* Table */
+  .table-wrap { overflow-x: auto; background: #fff; border-radius: 8px; box-shadow: 0 1px 4px rgba(0,0,0,.1); }
+  table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
+  thead tr { background: #1a3a5c; color: #fff; }
+  thead th { padding: 0.7rem 1rem; text-align: left; white-space: nowrap; font-weight: 600; }
+  tbody tr:nth-child(even) { background: #f8fafc; }
+  tbody tr:hover { background: #eef3f9; }
+  tbody td { padding: 0.6rem 1rem; border-bottom: 1px solid #e8ecf0; vertical-align: top; }
+  details summary { cursor: pointer; color: #1a3a5c; font-size: 0.82rem; }
+  details ul { margin-top: 0.4rem; padding-left: 1rem; list-style: none; }
+  details ul li { font-size: 0.8rem; color: #444; line-height: 1.6; }
+  details ul li span { font-weight: 600; }
+  .empty { text-align: center; padding: 3rem; color: #888; }
+</style>
+
+<div class="toolbar">
+  <h2>Projects</h2>
+  <span style="font-size:0.9rem;color:#666;">{{ projects|length }} project(s)</span>
+</div>
+
+<!-- Create project form -->
+<div class="panel">
+  <h3>Create Project</h3>
+  <form method="post" action="{{ url_for('projects_create') }}" id="create-form">
+    <div class="form-row">
+      <div class="form-group">
+        <label for="project_id">Project ID *</label>
+        <input type="text" id="project_id" name="project_id" placeholder="e.g. PROJ-001" required style="width:180px;">
+      </div>
+      <div class="form-group">
+        <label for="project_description">Description</label>
+        <input type="text" id="project_description" name="project_description" placeholder="Optional description" style="width:340px;">
+      </div>
+    </div>
+
+    <div class="attrs-label">Attributes</div>
+    <div id="attr-list"></div>
+    <button type="button" class="btn-secondary" onclick="addAttrRow()">+ Add Attribute</button>
+
+    <hr class="attrs-sep">
+    <button type="submit" class="btn-primary">Create Project</button>
+  </form>
+</div>
+
+<!-- Import from CSV -->
+<div class="panel">
+  <h3>Import from CSV</h3>
+  <form method="post" action="{{ url_for('projects_upload') }}" enctype="multipart/form-data">
+    <div class="upload-row">
+      <input type="file" name="file" accept=".csv" required>
+      <button type="submit" class="btn-primary">Import</button>
+    </div>
+  </form>
+  <p class="hint">CSV must include a "Project" column. Optional: "Description". Any other columns become attributes.</p>
+</div>
+
+{% if projects %}
+<div class="table-wrap">
+  <table>
+    <thead>
+      <tr>
+        <th>Project ID</th>
+        <th>Description</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for project in projects %}
+      <tr>
+        <td>{{ project.project_id }}</td>
+        <td>{{ project.project_description or '—' }}</td>
+        <td>
+          <a class="btn-details" href="{{ url_for('projects_detail', project_id=project.project_id) }}">Details</a>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<div class="empty">No projects yet. Create one above or import a CSV.</div>
+{% endif %}
+
+<script>
+  function addAttrRow(key, val) {
+    const list = document.getElementById('attr-list');
+    const row = document.createElement('div');
+    row.className = 'attr-row';
+    row.innerHTML =
+      '<input class="attr-key" type="text" name="attr_key" placeholder="Attribute name" value="' + (key || '') + '">' +
+      '<input class="attr-val" type="text" name="attr_value" placeholder="Value" value="' + (val || '') + '">' +
+      '<button type="button" class="btn-icon" title="Remove" onclick="this.parentElement.remove()">✕</button>';
+    list.appendChild(row);
+    row.querySelector('.attr-key').focus();
+  }
+</script>
+{% endblock %}

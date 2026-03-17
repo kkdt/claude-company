@@ -127,3 +127,10 @@ podman run --rm \
 27. Blur Annual Salary in Search Results view with Show Salary toggle — applied CSS blur to salary-value span; Show/Hide Salary toggle button in toolbar; currency filter applied to salary display
 28. Hide Annual Salary in Preview Import tab — salary column cells blurred by default with inline Show/Hide Salary toggle button next to the row count in the preview meta line
 29. Add "Import Example" button to upload screen — added /upload/example POST route that loads employees.csv from the project root and imports it directly; button appears below the file input on the upload card
+
+### Phase 2
+
+1. Analyze CLAUDE.md and code — Explored full codebase; confirmed all 5 screens, CSV field mappings, JSON datastore, and port 8080 were per spec.
+2. Analyze CLAUDE.md and create Projects screen — CLAUDE.md specifies a Project data model (project_id, project_description, attributes) from CSV. Implemented PROJECTS_PATH, parse_projects_csv(), load/save_projects(), three routes (/projects, /projects/upload, /projects/<id>/delete), projects.html, and "Projects" nav link.
+3. Add ability to create Projects with attributes — Added POST /projects/create route accepting project_id, project_description, and dynamic attr_key[]/attr_value[] lists. Updated projects.html with a Create Project form featuring a JS-driven "+ Add Attribute" builder. 
+4. Only show Project ID and Description in table; add Details button — Removed Attributes column from the projects table; added Details button linking to a new GET /projects/<id> route and project_detail.html template showing all fields and attributes.

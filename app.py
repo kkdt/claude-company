@@ -9,6 +9,12 @@ app = Flask(__name__)
 app.secret_key = "workforce-secret"
 
 DB_PATH = os.path.join(os.path.dirname(__file__), "data", "employees.json")
+PROJECTS_PATH = os.path.join(os.path.dirname(__file__), "data", "projects.json")
+
+PROJECT_FIELD_MAP = {
+    "Project": "project_id",
+    "Description": "project_description",
+}
 
 FIELD_MAP = {
     "Employee ID": "employee_id",
@@ -34,6 +40,36 @@ def load_employees():
 def save_employees(employees):
     with open(DB_PATH, "w") as f:
         json.dump(employees, f, indent=2)
+
+
+def load_projects():
+    if not os.path.exists(PROJECTS_PATH):
+        return []
+    with open(PROJECTS_PATH, "r") as f:
+        return json.load(f)
+
+
+def save_projects(projects):
+    os.makedirs(os.path.dirname(PROJECTS_PATH), exist_ok=True)
+    with open(PROJECTS_PATH, "w") as f:
+        json.dump(projects, f, indent=2)
+
+
+def parse_projects_csv(file_stream):
+    text = file_stream.read().decode("utf-8-sig")
+    reader = csv.DictReader(io.StringIO(text))
+    projects = []
+    for row in reader:
+        project = {}
+        attributes = []
+        for header, value in row.items():
+            if header in PROJECT_FIELD_MAP:
+                project[PROJECT_FIELD_MAP[header]] = value
+            else:
+                attributes.append({"key": header, "value": value})
+        project["attributes"] = attributes
+        projects.append(project)
+    return projects
 
 
 @app.template_filter("currency")
@@ -311,6 +347,61 @@ def employee_detail(employee_id):
     supervisor_id = extract_supervisor_id(employee.get("supervisor_organization", ""))
     supervisor = emp_map.get(supervisor_id) if supervisor_id else None
     return render_template("employee_detail.html", employee=employee, supervisor=supervisor)
+
+
+@app.route("/projects")
+def projects():
+    all_projects = load_projects()
+    return render_template("projects.html", projects=all_projects)
+
+
+@app.route("/projects/upload", methods=["POST"])
+def projects_upload():
+    file = request.files.get("file")
+    if not file or not file.filename.endswith(".csv"):
+        flash("Please upload a CSV file.")
+        return redirect(url_for("projects"))
+    parsed = parse_projects_csv(file)
+    save_projects(parsed)
+    flash(f"Successfully imported {len(parsed)} project(s).")
+    return redirect(url_for("projects"))
+
+
+@app.route("/projects/create", methods=["POST"])
+def projects_create():
+    project_id = request.form.get("project_id", "").strip()
+    project_description = request.form.get("project_description", "").strip()
+    if not project_id:
+        flash("Project ID is required.")
+        return redirect(url_for("projects"))
+    all_projects = load_projects()
+    if any(p.get("project_id") == project_id for p in all_projects):
+        flash(f"Project '{project_id}' already exists.")
+        return redirect(url_for("projects"))
+    keys = request.form.getlist("attr_key")
+    values = request.form.getlist("attr_value")
+    attributes = [{"key": k.strip(), "value": v.strip()} for k, v in zip(keys, values) if k.strip()]
+    all_projects.append({"project_id": project_id, "project_description": project_description, "attributes": attributes})
+    save_projects(all_projects)
+    flash(f"Project '{project_id}' created.")
+    return redirect(url_for("projects"))
+
+
+@app.route("/projects/<project_id>")
+def projects_detail(project_id):
+    project = next((p for p in load_projects() if p.get("project_id") == project_id), None)
+    if project is None:
+        flash(f"Project '{project_id}' not found.")
+        return redirect(url_for("projects"))
+    return render_template("project_detail.html", project=project)
+
+
+@app.route("/projects/<project_id>/delete", methods=["POST"])
+def projects_delete(project_id):
+    all_projects = [p for p in load_projects() if p.get("project_id") != project_id]
+    save_projects(all_projects)
+    flash(f"Project '{project_id}' deleted.")
+    return redirect(url_for("projects"))
 
 
 if __name__ == "__main__":

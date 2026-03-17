@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+{% block content %}
+<style>
+  .back-link { font-size: 0.875rem; color: #1a3a5c; text-decoration: none; display: inline-block; margin-bottom: 1.25rem; }
+  .back-link:hover { text-decoration: underline; }
+  .detail-card {
+    background: #fff; border-radius: 8px; box-shadow: 0 1px 4px rgba(0,0,0,.1); overflow: hidden;
+    margin-bottom: 1.5rem;
+  }
+  .detail-header {
+    background: #1a3a5c; color: #fff; padding: 1rem 1.5rem;
+    display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+  }
+  .detail-header h2 { font-size: 1.15rem; font-weight: 600; }
+  .detail-body { padding: 1.25rem 1.5rem; }
+  .field-row { display: flex; gap: 0; border-bottom: 1px solid #eef; }
+  .field-row:last-child { border-bottom: none; }
+  .field-label {
+    width: 200px; flex-shrink: 0; padding: 0.65rem 0.75rem 0.65rem 0;
+    font-size: 0.8rem; font-weight: 700; color: #555; text-transform: uppercase; letter-spacing: 0.04em;
+  }
+  .field-value { padding: 0.65rem 0; font-size: 0.9rem; color: #222; }
+  .field-value.empty { color: #aaa; font-style: italic; }
+
+  .section-title {
+    font-size: 0.8rem; font-weight: 700; color: #1a3a5c; text-transform: uppercase;
+    letter-spacing: 0.05em; margin: 1.5rem 0 0.75rem;
+  }
+  .attrs-table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
+  .attrs-table thead tr { background: #f0f4f8; }
+  .attrs-table thead th { padding: 0.5rem 0.75rem; text-align: left; color: #444; font-weight: 600; border-bottom: 2px solid #dde; }
+  .attrs-table tbody td { padding: 0.5rem 0.75rem; border-bottom: 1px solid #eef; }
+  .attrs-table tbody tr:last-child td { border-bottom: none; }
+  .no-attrs { font-size: 0.875rem; color: #aaa; font-style: italic; }
+
+  .actions { display: flex; gap: 0.75rem; }
+  .btn-danger {
+    padding: 0.35rem 0.9rem; font-size: 0.85rem; background: #c0392b; color: #fff;
+    border: none; border-radius: 4px; cursor: pointer;
+  }
+  .btn-danger:hover { background: #a93226; }
+</style>
+
+<a class="back-link" href="{{ url_for('projects') }}">← Back to Projects</a>
+
+<div class="detail-card">
+  <div class="detail-header">
+    <h2>{{ project.project_id }}</h2>
+    <div class="actions">
+      <form method="post" action="{{ url_for('projects_delete', project_id=project.project_id) }}"
+            onsubmit="return confirm('Delete project \'{{ project.project_id }}\'?');" style="margin:0;">
+        <button type="submit" class="btn-danger">Delete Project</button>
+      </form>
+    </div>
+  </div>
+  <div class="detail-body">
+    <div class="field-row">
+      <div class="field-label">Project ID</div>
+      <div class="field-value">{{ project.project_id }}</div>
+    </div>
+    <div class="field-row">
+      <div class="field-label">Description</div>
+      <div class="field-value {% if not project.project_description %}empty{% endif %}">
+        {{ project.project_description or 'No description' }}
+      </div>
+    </div>
+
+    <div class="section-title">Attributes</div>
+    {% if project.attributes %}
+    <table class="attrs-table">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Value</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for attr in project.attributes %}
+        <tr>
+          <td>{{ attr.key }}</td>
+          <td>{{ attr.value }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <p class="no-attrs">No attributes defined.</p>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

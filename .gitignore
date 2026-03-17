@@ -26,7 +26,7 @@ build/
 
 # App
 *.log
-data/employees.json
+data/*.json
 
 # Claude
 .claude/settings.local.json

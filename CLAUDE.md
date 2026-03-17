@@ -25,6 +25,13 @@ The following represent an Employee from the CSV header file.
 
 All other CSV headers maps to a JSON key `attributes` that is a JSON list of tuples of key-value pairs.
 
+## Project - CSV Headers
+
+* Header "Project" maps to JSON key `project_id`
+* Header "Description" maps to JSON key `project_description`
+
+All other CSV headers maps to a JSON key `attributes` that is a JSON list of tuples of key-value pairs.
+
 ## Screens
 
 1. Upload employee CSV file
@@ -34,6 +41,8 @@ All other CSV headers maps to a JSON key `attributes` that is a JSON list of tup
 3. View employee details
 
 4. Organization
+
+5. Projects - Manage projects
 
 ## Application Deployment
 
