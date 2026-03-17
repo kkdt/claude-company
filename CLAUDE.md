@@ -1,4 +1,4 @@
-# workforce
+# claude-company
 
 ## Overview
 
