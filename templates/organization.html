@@ -46,13 +46,7 @@
     border-radius: 4px; background: #fff; cursor: pointer; color: #1a3a5c;
   }
   .controls button:hover { background: #eef3f9; }
-  .btn-chart {
-    display: inline-block; padding: 0.35rem 0.9rem; font-size: 0.85rem;
-    background: #2e7d4f; color: #fff; border-radius: 4px; text-decoration: none;
-  }
-  .btn-chart:hover { background: #256040; }
-
-  .tree-root { list-style: none; }
+.tree-root { list-style: none; }
   .node-item { margin: 0.4rem 0; }
   .children-list { list-style: none; padding-left: 2rem; border-left: 2px solid #d0dce8; margin-left: 1rem; margin-top: 0.4rem; }
 
@@ -144,6 +138,44 @@
 
   .empty { text-align: center; padding: 3rem; color: #888; }
   .empty a { color: #1a3a5c; }
+
+  /* Render modal */
+  .render-backdrop {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,.55); z-index: 200; align-items: center; justify-content: center;
+  }
+  .render-backdrop.open { display: flex; }
+  .render-modal {
+    background: #1a1a1a; color: #d4d4d4; border-radius: 8px;
+    box-shadow: 0 8px 32px rgba(0,0,0,.5);
+    width: 760px; max-width: 95vw; max-height: 85vh;
+    display: flex; flex-direction: column; overflow: hidden;
+  }
+  .render-modal-header {
+    background: #111; padding: 0.75rem 1.25rem;
+    display: flex; align-items: center; justify-content: space-between;
+    border-bottom: 1px solid #333; flex-shrink: 0;
+  }
+  .render-modal-header span { font-size: 0.85rem; color: #888; font-family: monospace; }
+  .render-close {
+    background: none; border: none; color: #888; font-size: 1.1rem;
+    cursor: pointer; line-height: 1; padding: 0 0.25rem;
+  }
+  .render-close:hover { color: #fff; }
+  .render-body {
+    overflow-y: auto; padding: 1.25rem 1.5rem; flex: 1;
+  }
+  .render-body pre {
+    font-family: 'Courier New', Courier, monospace; font-size: 0.82rem;
+    line-height: 1.55; white-space: pre; margin: 0; color: #d4d4d4;
+  }
+  .render-body pre .node-name { color: #9cdcfe; }
+  .render-body pre .node-meta { color: #6a9955; }
+  .btn-render {
+    padding: 0.35rem 0.9rem; font-size: 0.85rem; background: #444; color: #fff;
+    border: 1px solid #666; border-radius: 4px; cursor: pointer; white-space: nowrap;
+  }
+  .btn-render:hover { background: #555; }
 </style>
 
 <div class="toolbar">
@@ -151,7 +183,7 @@
   <div class="toolbar-right">
     <span style="font-size:0.9rem;color:#666;">{{ emp_map|length }} employee(s)</span>
     {% if roots %}<button class="btn-toggle-salary" onclick="toggleSalary(this)">Show Salary</button>{% endif %}
-    {% if roots %}<a class="btn-chart" href="{{ url_for('organization_chart') }}">View Chart</a>{% endif %}
+    {% if roots %}<button class="btn-render" onclick="openRender()">Render</button>{% endif %}
   </div>
 </div>
 
@@ -392,6 +424,99 @@
   }
 
   initDrag();
+</script>
+
+<!-- Render modal -->
+<div class="render-backdrop" id="render-backdrop" onclick="closeRenderOnBackdrop(event)">
+  <div class="render-modal">
+    <div class="render-modal-header">
+      <span>org chart — terminal tree</span>
+      <button class="render-close" onclick="closeRender()" aria-label="Close">&#x2715;</button>
+    </div>
+    <div class="render-body">
+      <pre id="render-output"></pre>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Build tree data from the server-rendered org structure
+  // Each node-item carries data-emp-id / data-emp-name; children are nested inside .children-list
+  function buildTreeData(li) {
+    const empId   = li.dataset.empId;
+    const empName = li.dataset.empName;
+    // job profile is in .emp-meta (first one)
+    const metas   = li.querySelectorAll(':scope > .emp-card > .emp-card-header .emp-meta');
+    const meta    = metas.length ? metas[0].textContent.trim() : '';
+    // children: direct .node-item descendants inside the immediate .children-list
+    const childList = li.querySelector(':scope > .emp-card > .children-list');
+    const children  = childList
+      ? Array.from(childList.querySelectorAll(':scope > .node-item:not(.removed)')).map(buildTreeData)
+      : [];
+    return { empId, empName, meta, children };
+  }
+
+  function renderTree(nodes, prefix, isLast) {
+    let out = '';
+    nodes.forEach((node, i) => {
+      const last      = i === nodes.length - 1;
+      const connector = last ? '└── ' : '├── ';
+      const childPfx  = last ? '    ' : '│   ';
+      out += prefix + connector
+           + `\x1b[0m${node.empName}\x1b[0m`
+           + (node.meta ? `  \x1b[2m${node.meta}\x1b[0m` : '')
+           + '\n';
+      if (node.children.length) {
+        out += renderTree(node.children, prefix + childPfx, last);
+      }
+    });
+    return out;
+  }
+
+  // Render as HTML (no ANSI — use spans instead)
+  function renderTreeHTML(nodes, prefix) {
+    let out = '';
+    nodes.forEach((node, i) => {
+      const last      = i === nodes.length - 1;
+      const connector = last ? '└── ' : '├── ';
+      const childPfx  = last ? '    ' : '│   ';
+      const nameHtml  = `<span class="node-name">${esc(node.empName)}</span>`;
+      const metaHtml  = node.meta ? `  <span class="node-meta">${esc(node.meta)}</span>` : '';
+      out += esc(prefix) + connector + nameHtml + metaHtml + '\n';
+      if (node.children.length) {
+        out += renderTreeHTML(node.children, prefix + childPfx);
+      }
+    });
+    return out;
+  }
+
+  function esc(s) {
+    return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  function openRender() {
+    const rootItems = Array.from(
+      document.querySelectorAll('#tree-root > .node-item:not(.removed)')
+    );
+    const treeData = rootItems.map(buildTreeData);
+    const html = renderTreeHTML(treeData, '');
+    document.getElementById('render-output').innerHTML = html;
+    document.getElementById('render-backdrop').classList.add('open');
+    document.addEventListener('keydown', renderEscListener);
+  }
+
+  function closeRender() {
+    document.getElementById('render-backdrop').classList.remove('open');
+    document.removeEventListener('keydown', renderEscListener);
+  }
+
+  function closeRenderOnBackdrop(e) {
+    if (e.target === document.getElementById('render-backdrop')) closeRender();
+  }
+
+  function renderEscListener(e) {
+    if (e.key === 'Escape') closeRender();
+  }
 </script>
 
 {% else %}

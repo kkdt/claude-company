@@ -347,14 +347,6 @@ def organization_export():
     )
 
 
-@app.route("/organization/chart")
-def organization_chart():
-    all_employees = load_employees()
-    roots, children_map = build_org_tree(all_employees)
-    emp_map = {e["employee_id"]: e for e in all_employees}
-    return render_template("organization_chart.html", roots=roots, children_map=children_map, emp_map=emp_map)
-
-
 @app.route("/employees/<employee_id>")
 def employee_detail(employee_id):
     all_employees = load_employees()

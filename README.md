@@ -92,6 +92,8 @@ podman run --rm \
 
 ## Claude Instruction History
 
+> Claude command: show instruction history
+
 ### Phase 1 - Training Claude and basic app functionality
 
 > Ramping up on Claude and getting my development environment up (4 hours) - Account setup, Calude settings, dotfiles, dev containers
@@ -128,7 +130,7 @@ podman run --rm \
 28. Hide Annual Salary in Preview Import tab — salary column cells blurred by default with inline Show/Hide Salary toggle button next to the row count in the preview meta line
 29. Add "Import Example" button to upload screen — added /upload/example POST route that loads employees.csv from the project root and imports it directly; button appears below the file input on the upload card
 
-### Phase 2
+### Phase 2 - Add staffing functionality
 
 1. Analyze CLAUDE.md and code — Explored full codebase; confirmed all 5 screens, CSV field mappings, JSON datastore, and port 8080 were per spec.
 2. Analyze CLAUDE.md and create Projects screen — CLAUDE.md specifies a Project data model (project_id, project_description, attributes) from CSV. Implemented PROJECTS_PATH, parse_projects_csv(), load/save_projects(), three routes (/projects, /projects/upload, /projects/<id>/delete), projects.html, and "Projects" nav link.
@@ -138,8 +140,7 @@ podman run --rm \
 6. Proceed (implement Staffing) — Built data/staffing.json store, load/save_staffing(), 5 routes (/staffing, /staffing/<year>/<month>, /save, /copy, /new), staffing.html (month list with Current/Past/Planned badges), staffing_month.html (employee × project checkbox matrix, read-only past months, copy-to-next-month).
 7. Add Supervisory Organization filter in Monthly staffing screen — Added client-side filter dropdown above the matrix populated from unique supervisor_organization values; filters rows instantly by org with a live count display.
 8. Add secondary navigation to Staffing with 1 item linking to current Staffing page — Added single-item subnav ("Staffing") to staffing.html (active) and staffing_month.html (inactive); replaced back link.
-9. Add Projections to Staffing navigation — tabular view with months as columns, employees as rows — Added GET /staffing/projections route and staffing_projections.html: employees as rows, current+future months as columns, project ID badges in each cell, Edit → links per month header. Added "Projections" to subnav on all Staffing pages.
-months as columns, project ID badges per cell, Edit → links per month header. Added "Projections" to subnav on all Staffing pages.
+9. Add Projections to Staffing navigation — tabular view with months as columns, employees as rows — Added GET /staffing/projections route and staffing_projections.html: employees as rows, current+future months as columns, project ID badges in each cell, Edit → links per month header. Added "Projections" to subnav on all Staffing pages. months as columns, project ID badges per cell, Edit → links per month header. Added "Projections" to subnav on all Staffing pages.
 10. Add a color picker to Projects, JSON key is optional "Color" — Added <input type="color"> to create form; saved as color key; color swatch in projects table; header background and field row in project detail.
 11. Update Project CSV import to map "Color" header to project_color — Added "Color": "project_color" to PROJECT_FIELD_MAP.
 12. Show employee modal in Staffing Projections — Employee names became buttons opening a modal showing job profile, location, employee ID, and per-month project assignments.
@@ -148,6 +149,8 @@ months as columns, project ID badges per cell, Edit → links per month header. 
 15. Remove Job Profile column from Staffing Projections — Removed <th> and <td> for Job Profile from the matrix table.
 16. Include Supervisory Organization dropdown filter in Staffing Projections — Client-side filter bar above matrix with live count.
 17. Format Staffing Projections columns "YYYY-MM" — Changed from MM YYYY to YYYY-MM in column headers and modal labels.
-18. Color code project tags in Staffing Projections — Tags in matrix table and modal colored via project_color; luminance-based text contrast.                                                                   
-19. Add quick filters for projects in Staffing Projections — Project pill buttons toggle row visibility; combines with org filter; live count.                                                                   
-20. Add clear all project filters — Clear button appears when any project filter is active; hides when none selected.                                                                                            
+18. Color code project tags in Staffing Projections — Tags in matrix table and modal colored via project_color; luminance-based text contrast.
+19. Add quick filters for projects in Staffing Projections — Project pill buttons toggle row visibility; combines with org filter; live count.
+20. Add clear all project filters — Clear button appears when any project filter is active; hides when none selected.
+21. Add Render button to Organization screen — Dark terminal-style modal renders org chart as ASCII tree with ├──/└── connectors; names in blue, metadata in green; reflects live drag-and-drop state.
+22. Remove View Chart button and associated libraries — Removed button, .btn-chart style, GET /organization/chart route, and deleted organization_chart.html.
