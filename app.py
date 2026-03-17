@@ -435,6 +435,38 @@ def staffing():
     return render_template("staffing.html", months=months, today_year=today.year, today_month=today.month)
 
 
+@app.route("/staffing/projections")
+def staffing_projections():
+    from datetime import date
+    today = date.today()
+    records = load_staffing()
+    employees = load_employees()
+    proj_map = {p["project_id"]: p for p in load_projects()}
+    # Include current month and all future months that have records
+    future = sorted(
+        [r for r in records if (r["year"], r["month"]) >= (today.year, today.month)],
+        key=lambda r: (r["year"], r["month"])
+    )
+    # Build lookup: {(year, month): {employee_id: [project_id, ...]}}
+    month_assignments = {}
+    for r in future:
+        key = (r["year"], r["month"])
+        emp_proj = {}
+        for a in r["assignments"]:
+            emp_proj.setdefault(a["employee_id"], []).append(a["project_id"])
+        month_assignments[key] = emp_proj
+    months = [(r["year"], r["month"]) for r in future]
+    return render_template(
+        "staffing_projections.html",
+        months=months,
+        employees=employees,
+        proj_map=proj_map,
+        month_assignments=month_assignments,
+        today_year=today.year,
+        today_month=today.month,
+    )
+
+
 @app.route("/staffing/<int:year>/<int:month>")
 def staffing_month(year, month):
     from datetime import date
