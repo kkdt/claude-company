@@ -139,11 +139,12 @@ podman run --rm \
 7. Add Supervisory Organization filter in Monthly staffing screen — Added client-side filter dropdown above the matrix populated from unique supervisor_organization values; filters rows instantly by org with a live count display.
 8. Add secondary navigation to Staffing with 1 item linking to current Staffing page — Added single-item subnav ("Staffing") to staffing.html (active) and staffing_month.html (inactive); replaced back link.
 9. Add Projections to Staffing navigation — tabular view with months as columns, employees as rows — Added GET /staffing/projections route and staffing_projections.html: employees as rows, current+future months as columns, project ID badges in each cell, Edit → links per month header. Added "Projections" to subnav on all Staffing pages.
-  months as columns, project ID badges per cell, Edit → links per month header. Added "Projections" to subnav on all Staffing pages.
-10. Add a color picker to Projects, JSON key is optional "Color" — Added <input type="color"> to create form; saved as color key; color swatch in projects table; header background and field row in project
-detail.
+months as columns, project ID badges per cell, Edit → links per month header. Added "Projections" to subnav on all Staffing pages.
+10. Add a color picker to Projects, JSON key is optional "Color" — Added <input type="color"> to create form; saved as color key; color swatch in projects table; header background and field row in project detail.
 11. Update Project CSV import to map "Color" header to project_color — Added "Color": "project_color" to PROJECT_FIELD_MAP.
 12. Show employee modal in Staffing Projections — Employee names became buttons opening a modal showing job profile, location, employee ID, and per-month project assignments.
 13. Include Supervisory Organization in employee modal — Added supervisor_organization to JS data and modal body.
 14. Format Staffing Projections columns "MM YYYY" — Column headers and modal month labels changed from full month name to zero-padded MM YYYY.
 15. Remove Job Profile column from Staffing Projections — Removed <th> and <td> for Job Profile from the matrix table.
+16. Include Supervisory Organization dropdown filter in Staffing Projections — Client-side filter bar above matrix with live count.
+17. Format Staffing Projections columns "YYYY-MM" — Changed from MM YYYY to YYYY-MM in column headers and modal labels.
