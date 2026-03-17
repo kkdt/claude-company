@@ -10,6 +10,7 @@ app.secret_key = "workforce-secret"
 
 DB_PATH = os.path.join(os.path.dirname(__file__), "data", "employees.json")
 PROJECTS_PATH = os.path.join(os.path.dirname(__file__), "data", "projects.json")
+STAFFING_PATH = os.path.join(os.path.dirname(__file__), "data", "staffing.json")
 
 PROJECT_FIELD_MAP = {
     "Project": "project_id",
@@ -53,6 +54,23 @@ def save_projects(projects):
     os.makedirs(os.path.dirname(PROJECTS_PATH), exist_ok=True)
     with open(PROJECTS_PATH, "w") as f:
         json.dump(projects, f, indent=2)
+
+
+def load_staffing():
+    if not os.path.exists(STAFFING_PATH):
+        return []
+    with open(STAFFING_PATH, "r") as f:
+        return json.load(f)
+
+
+def save_staffing(records):
+    os.makedirs(os.path.dirname(STAFFING_PATH), exist_ok=True)
+    with open(STAFFING_PATH, "w") as f:
+        json.dump(records, f, indent=2)
+
+
+def get_staffing_month(records, year, month):
+    return next((r for r in records if r["year"] == year and r["month"] == month), None)
 
 
 def parse_projects_csv(file_stream):
@@ -402,6 +420,112 @@ def projects_delete(project_id):
     save_projects(all_projects)
     flash(f"Project '{project_id}' deleted.")
     return redirect(url_for("projects"))
+
+
+@app.route("/staffing")
+def staffing():
+    from datetime import date
+    records = load_staffing()
+    today = date.today()
+    # Build a sorted list of (year, month) that exist, plus current month if missing
+    existing = {(r["year"], r["month"]) for r in records}
+    if (today.year, today.month) not in existing:
+        existing.add((today.year, today.month))
+    months = sorted(existing, reverse=True)
+    return render_template("staffing.html", months=months, today_year=today.year, today_month=today.month)
+
+
+@app.route("/staffing/<int:year>/<int:month>")
+def staffing_month(year, month):
+    from datetime import date
+    today = date.today()
+    is_past = (year, month) < (today.year, today.month)
+    records = load_staffing()
+    record = get_staffing_month(records, year, month)
+    assignments = record["assignments"] if record else []
+    employees = load_employees()
+    projects = load_projects()
+    emp_map = {e["employee_id"]: e for e in employees}
+    proj_map = {p["project_id"]: p for p in projects}
+    # Build per-employee assignment lookup: {employee_id: [project_id, ...]}
+    emp_assignments = {}
+    for a in assignments:
+        emp_assignments.setdefault(a["employee_id"], []).append(a["project_id"])
+    return render_template(
+        "staffing_month.html",
+        year=year, month=month,
+        is_past=is_past,
+        employees=employees,
+        projects=projects,
+        emp_map=emp_map,
+        proj_map=proj_map,
+        emp_assignments=emp_assignments,
+        today_year=today.year,
+        today_month=today.month,
+    )
+
+
+@app.route("/staffing/<int:year>/<int:month>/save", methods=["POST"])
+def staffing_month_save(year, month):
+    from datetime import date
+    today = date.today()
+    if (year, month) < (today.year, today.month):
+        flash("Past month assignments cannot be modified.")
+        return redirect(url_for("staffing_month", year=year, month=month))
+    # Form sends: assign_<employee_id> = [project_id, ...]  (checkboxes)
+    employees = load_employees()
+    assignments = []
+    for emp in employees:
+        eid = emp["employee_id"]
+        project_ids = request.form.getlist(f"assign_{eid}")
+        for pid in project_ids:
+            assignments.append({"employee_id": eid, "project_id": pid})
+    records = load_staffing()
+    existing = get_staffing_month(records, year, month)
+    if existing:
+        existing["assignments"] = assignments
+    else:
+        records.append({"year": year, "month": month, "assignments": assignments})
+    save_staffing(records)
+    flash("Staffing saved.")
+    return redirect(url_for("staffing_month", year=year, month=month))
+
+
+@app.route("/staffing/<int:year>/<int:month>/copy", methods=["POST"])
+def staffing_month_copy(year, month):
+    import calendar
+    from datetime import date
+    today = date.today()
+    records = load_staffing()
+    source = get_staffing_month(records, year, month)
+    assignments = source["assignments"] if source else []
+    # Advance one month
+    if month == 12:
+        t_year, t_month = year + 1, 1
+    else:
+        t_year, t_month = year, month + 1
+    if (t_year, t_month) < (today.year, today.month):
+        flash("Cannot copy into a past month.")
+        return redirect(url_for("staffing_month", year=year, month=month))
+    existing = get_staffing_month(records, t_year, t_month)
+    if existing:
+        existing["assignments"] = list(assignments)
+    else:
+        records.append({"year": t_year, "month": t_month, "assignments": list(assignments)})
+    save_staffing(records)
+    flash(f"Copied to {calendar.month_name[t_month]} {t_year}.")
+    return redirect(url_for("staffing_month", year=t_year, month=t_month))
+
+
+@app.route("/staffing/new", methods=["POST"])
+def staffing_new_month():
+    try:
+        year = int(request.form["year"])
+        month = int(request.form["month"])
+    except (KeyError, ValueError):
+        flash("Invalid month.")
+        return redirect(url_for("staffing"))
+    return redirect(url_for("staffing_month", year=year, month=month))
 
 
 if __name__ == "__main__":

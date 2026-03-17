@@ -1,0 +1,192 @@
+{% extends "base.html" %}
+{% block content %}
+<style>
+  {% set MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'] %}
+  .back-link { font-size: 0.875rem; color: #1a3a5c; text-decoration: none; display: inline-block; margin-bottom: 1.25rem; }
+  .back-link:hover { text-decoration: underline; }
+  .page-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 1.25rem; flex-wrap: wrap; gap: 0.75rem;
+  }
+  .page-header h2 { font-size: 1.2rem; }
+  .badge {
+    display: inline-block; padding: 0.2rem 0.65rem; border-radius: 999px;
+    font-size: 0.8rem; font-weight: 600; margin-left: 0.5rem;
+  }
+  .badge-current { background: #d4edda; color: #155724; }
+  .badge-past { background: #f0f0f0; color: #666; }
+  .badge-future { background: #e8f0fe; color: #1a3a5c; }
+  .actions { display: flex; gap: 0.6rem; align-items: center; flex-wrap: wrap; }
+  .btn-primary {
+    padding: 0.4rem 1rem; font-size: 0.875rem; background: #1a3a5c; color: #fff;
+    border: none; border-radius: 4px; cursor: pointer; white-space: nowrap;
+  }
+  .btn-primary:hover { background: #255480; }
+  .btn-secondary {
+    padding: 0.4rem 1rem; font-size: 0.875rem; background: #fff; color: #1a3a5c;
+    border: 1px solid #1a3a5c; border-radius: 4px; cursor: pointer; white-space: nowrap;
+  }
+  .btn-secondary:hover { background: #eef3f9; }
+
+  /* Matrix table */
+  .matrix-wrap { overflow-x: auto; background: #fff; border-radius: 8px; box-shadow: 0 1px 4px rgba(0,0,0,.1); }
+  table { width: 100%; border-collapse: collapse; font-size: 0.855rem; }
+  thead tr { background: #1a3a5c; color: #fff; }
+  thead th { padding: 0.65rem 0.85rem; text-align: left; white-space: nowrap; font-weight: 600; }
+  thead th.proj-col { text-align: center; min-width: 110px; }
+  tbody tr:nth-child(even) { background: #f8fafc; }
+  tbody tr:hover { background: #eef3f9; }
+  tbody td { padding: 0.55rem 0.85rem; border-bottom: 1px solid #e8ecf0; vertical-align: middle; }
+  tbody td.proj-cell { text-align: center; }
+  .emp-name { font-weight: 500; }
+  .emp-meta { font-size: 0.78rem; color: #888; }
+
+  /* Checkbox styling */
+  .check-wrap { display: flex; justify-content: center; }
+  input[type="checkbox"] { width: 16px; height: 16px; cursor: pointer; accent-color: #1a3a5c; }
+  input[type="checkbox"]:disabled { cursor: default; opacity: 0.5; }
+
+  /* Checked cell highlight */
+  td.assigned { background: #e8f5ee; }
+  tr:nth-child(even) td.assigned { background: #dff0e8; }
+
+  .empty { text-align: center; padding: 3rem; color: #888; }
+  .readonly-note {
+    background: #fff8e1; border: 1px solid #ffe082; border-radius: 6px;
+    padding: 0.65rem 1rem; font-size: 0.875rem; color: #795548; margin-bottom: 1.25rem;
+  }
+  .no-projects { background: #fff3cd; border: 1px solid #ffc107; border-radius: 6px;
+    padding: 0.65rem 1rem; font-size: 0.875rem; color: #856404; margin-bottom: 1.25rem; }
+  .filter-bar {
+    background: #fff; border-radius: 8px; box-shadow: 0 1px 4px rgba(0,0,0,.1);
+    padding: 0.75rem 1.25rem; margin-bottom: 1rem;
+    display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap;
+  }
+  .filter-bar label { font-size: 0.8rem; font-weight: 600; color: #555; white-space: nowrap; }
+  .filter-bar select {
+    padding: 0.35rem 0.65rem; border: 1px solid #ccd; border-radius: 4px;
+    font-size: 0.875rem; background: #f9fafc; min-width: 240px;
+  }
+  .filter-bar select:focus { outline: none; border-color: #1a3a5c; }
+  .filter-count { font-size: 0.8rem; color: #888; }
+</style>
+
+{% set MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'] %}
+{% set is_current = (year == today_year and month == today_month) %}
+
+<a class="back-link" href="{{ url_for('staffing') }}">← Back to Staffing</a>
+
+<div class="page-header">
+  <h2>
+    {{ MONTHS[month-1] }} {{ year }}
+    {% if is_current %}
+      <span class="badge badge-current">Current</span>
+    {% elif is_past %}
+      <span class="badge badge-past">Past</span>
+    {% else %}
+      <span class="badge badge-future">Planned</span>
+    {% endif %}
+  </h2>
+  <div class="actions">
+    {% if not is_past %}
+    <button form="staffing-form" type="submit" class="btn-primary">Save Assignments</button>
+    {% endif %}
+    <form method="post" action="{{ url_for('staffing_month_copy', year=year, month=month) }}" style="margin:0;">
+      <button type="submit" class="btn-secondary">Copy to Next Month →</button>
+    </form>
+  </div>
+</div>
+
+{% if is_past %}
+<div class="readonly-note">
+  This is a past month and is read-only. Use "Copy to Next Month" to plan future staffing based on this month.
+</div>
+{% endif %}
+
+{% if not projects %}
+<div class="no-projects">
+  No projects found. <a href="{{ url_for('projects') }}">Add projects</a> before managing staffing.
+</div>
+{% endif %}
+
+{% if employees and projects %}
+
+{% set orgs = employees | map(attribute='supervisor_organization') | select | unique | sort | list %}
+<div class="filter-bar">
+  <label for="org-filter">Supervisory Org</label>
+  <select id="org-filter" onchange="filterByOrg(this.value)">
+    <option value="">— All —</option>
+    {% for org in orgs %}
+    <option value="{{ org }}">{{ org }}</option>
+    {% endfor %}
+  </select>
+  <span class="filter-count" id="filter-count"></span>
+</div>
+
+<form id="staffing-form" method="post" action="{{ url_for('staffing_month_save', year=year, month=month) }}">
+<div class="matrix-wrap">
+  <table>
+    <thead>
+      <tr>
+        <th>Employee</th>
+        <th>Job Profile</th>
+        {% for proj in projects %}
+        <th class="proj-col" title="{{ proj.project_description or '' }}">{{ proj.project_id }}</th>
+        {% endfor %}
+      </tr>
+    </thead>
+    <tbody>
+      {% for emp in employees %}
+      {% set eid = emp.employee_id %}
+      <tr data-org="{{ emp.supervisor_organization or '' }}">
+        <td>
+          <div class="emp-name">
+            <a href="{{ url_for('employee_detail', employee_id=eid) }}" style="color:#1a3a5c;text-decoration:none;">
+              {{ emp.employee_name }}
+            </a>
+          </div>
+          <div class="emp-meta">{{ eid }}</div>
+        </td>
+        <td>{{ emp.job_profile }}</td>
+        {% for proj in projects %}
+        {% set assigned = proj.project_id in emp_assignments.get(eid, []) %}
+        <td class="proj-cell {% if assigned %}assigned{% endif %}" id="cell-{{ eid }}-{{ proj.project_id }}">
+          <div class="check-wrap">
+            <input type="checkbox"
+              name="assign_{{ eid }}"
+              value="{{ proj.project_id }}"
+              {% if assigned %}checked{% endif %}
+              {% if is_past %}disabled{% endif %}
+              onchange="toggleCell(this, 'cell-{{ eid }}-{{ proj.project_id }}')">
+          </div>
+        </td>
+        {% endfor %}
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+</form>
+{% elif not employees %}
+<div class="empty">No employees loaded. <a href="{{ url_for('upload') }}">Upload a CSV</a> first.</div>
+{% endif %}
+
+<script>
+  function toggleCell(checkbox, cellId) {
+    const cell = document.getElementById(cellId);
+    cell.classList.toggle('assigned', checkbox.checked);
+  }
+
+  function filterByOrg(org) {
+    const rows = document.querySelectorAll('tbody tr');
+    let visible = 0;
+    rows.forEach(row => {
+      const match = !org || row.dataset.org === org;
+      row.style.display = match ? '' : 'none';
+      if (match) visible++;
+    });
+    const count = document.getElementById('filter-count');
+    count.textContent = org ? `${visible} of ${rows.length} employee(s)` : '';
+  }
+</script>
+{% endblock %}

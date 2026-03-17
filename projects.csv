@@ -1,0 +1,21 @@
+Project,Description,Status,Budget (USD),Project Manager,Start Date,Priority
+PRJ-001,Redesign the company website to improve user experience and mobile responsiveness,In Progress,120000,Alice Johnson,2026-01-15,High
+PRJ-002,Develop an internal HR management system for tracking employee performance,Planning,95000,Bob Martinez,2026-02-01,Medium
+PRJ-003,Migrate on-premise data infrastructure to AWS cloud platform,Completed,210000,Carol Smith,2025-09-10,High
+PRJ-004,Launch a customer loyalty rewards program for retail stores,In Progress,75000,David Lee,2026-01-20,Medium
+PRJ-005,Build a real-time inventory tracking system for warehouse operations,Planning,130000,Eva Chen,2026-03-01,High
+PRJ-006,Implement an AI-powered chatbot for customer support automation,In Progress,88000,Frank Nguyen,2026-02-10,High
+PRJ-007,Create a mobile app for employee shift scheduling and time tracking,On Hold,60000,Grace Kim,2025-11-05,Low
+PRJ-008,Conduct a cybersecurity audit and deploy endpoint protection solutions,Completed,45000,Henry Patel,2025-08-20,Critical
+PRJ-009,Develop a data analytics dashboard for sales and revenue reporting,In Progress,99000,Isla Robinson,2026-01-08,High
+PRJ-010,Establish a green energy initiative to reduce office carbon footprint,Planning,55000,James O'Brien,2026-04-01,Low
+PRJ-011,Design and roll out a new employee onboarding training program,Completed,32000,Karen White,2025-10-15,Medium
+PRJ-012,Integrate a CRM system with existing marketing automation tools,In Progress,74000,Liam Torres,2026-02-18,Medium
+PRJ-013,Build an e-commerce platform with multi-currency payment support,Planning,185000,Mia Patel,2026-03-10,High
+PRJ-014,Deploy a machine learning model for predictive maintenance in manufacturing,In Progress,160000,Noah Garcia,2026-01-25,Critical
+PRJ-015,Create a content management system for the marketing team,Completed,42000,Olivia Brown,2025-12-01,Low
+PRJ-016,Develop a supplier portal for streamlining procurement workflows,On Hold,91000,Paul Wilson,2025-10-30,Medium
+PRJ-017,Launch an internal knowledge base and documentation hub,In Progress,38000,Quinn Davis,2026-02-05,Low
+PRJ-018,Implement a DevOps CI/CD pipeline for faster software deployments,Completed,67000,Rachel Moore,2025-11-20,High
+PRJ-019,Design a brand refresh including new logo, colors, and style guidelines,Planning,50000,Samuel Clark,2026-03-15,Medium
+PRJ-020,Build a cross-platform video conferencing tool for remote teams,In Progress,142000,Tina Evans,2026-01-30,High

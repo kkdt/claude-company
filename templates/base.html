@@ -40,6 +40,7 @@
       <a href="{{ url_for('employees') }}">View Employees</a>
       <a href="{{ url_for('organization') }}">Organization</a>
       <a href="{{ url_for('projects') }}">Projects</a>
+      <a href="{{ url_for('staffing') }}">Staffing</a>
     </nav>
     <form class="search-form" action="{{ url_for('search') }}" method="get">
       <input type="search" name="q" placeholder="Search employees…" value="{{ request.args.get('q', '') }}">
