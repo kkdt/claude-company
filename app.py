@@ -498,23 +498,39 @@ def staffing_projections():
     today = date.today()
     records = load_staffing()
     employees = load_employees()
-    proj_map = {p["project_id"]: p for p in load_projects()}
-    # Include current month and all future months that have records
-    future = sorted(
-        [r for r in records if (r["year"], r["month"]) >= (today.year, today.month)],
+    all_projects = load_projects()
+    proj_map = {p["project_id"]: p for p in all_projects}
+    active_proj_ids = {p["project_id"] for p in all_projects if p.get("active", True)}
+
+    # Determine from/to month range filter (default: current month to end of data)
+    all_record_months = sorted({(r["year"], r["month"]) for r in records})
+    last_year, last_month = all_record_months[-1] if all_record_months else (today.year, today.month)
+    try:
+        from_year = int(request.args.get("from_year", today.year))
+        from_month = int(request.args.get("from_month", today.month))
+        to_year = int(request.args.get("to_year", last_year))
+        to_month = int(request.args.get("to_month", last_month))
+    except (ValueError, TypeError):
+        from_year, from_month = today.year, today.month
+        to_year, to_month = last_year, last_month
+
+    filtered = sorted(
+        [r for r in records if (from_year, from_month) <= (r["year"], r["month"]) <= (to_year, to_month)],
         key=lambda r: (r["year"], r["month"])
     )
-    # Build lookup: {(year, month): {employee_id: [project_id, ...]}}
-    active_proj_ids = {p["project_id"] for p in load_projects() if p.get("active", True)}
+
     month_assignments = {}
-    for r in future:
+    for r in filtered:
         key = (r["year"], r["month"])
         emp_proj = {}
         for a in r["assignments"]:
             if a["project_id"] in active_proj_ids:
                 emp_proj.setdefault(a["employee_id"], []).append(a["project_id"])
         month_assignments[key] = emp_proj
-    months = [(r["year"], r["month"]) for r in future]
+
+    months = [(r["year"], r["month"]) for r in filtered]
+    all_record_months = sorted({(r["year"], r["month"]) for r in records})
+
     return render_template(
         "staffing_projections.html",
         months=months,
@@ -523,6 +539,9 @@ def staffing_projections():
         month_assignments=month_assignments,
         today_year=today.year,
         today_month=today.month,
+        from_year=from_year,
+        from_month=from_month,
+        all_record_months=all_record_months,
     )
 
 
