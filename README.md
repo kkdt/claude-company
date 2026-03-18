@@ -173,3 +173,15 @@ podman run --rm \
 39. When updating a project, ensure that the project is active when the checkbox is checked
 40. When viewing Staffing Month, when clicking on an employee, display details in a modal
 41. Ensure that the employee modal is displayed on the right screen
+42. On Staffing screen, allow copy into past month
+43. In Staffing Month screen, remove "Job Profile" column
+44. On Staffing Projections screen, remove "No current or future staffing months found" restriction
+45. From Staffing screens, allow sort by "Employee" column
+46. From Staffing Month screen, add Project filter to limit displayed columns
+47. From Staffing Month screen, add a text field that performs a fuzzy search on employee_name
+48. On Staffing Month screen, the projects filter only show selected columns and hide all others
+49. In Staffing screens, always group Project filters alphabetically
+50. In Staffing Month screen, the Project columns should be ordered by "project_id"
+51. From Projects screen, allow sort by "Project ID"
+52. From Staffing page, allow delete of each month entry
+53. When deleting a Project, also remove from staffing entries

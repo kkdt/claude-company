@@ -29,10 +29,15 @@
   .btn-secondary:hover { background: #eef3f9; }
 
   /* Matrix table */
-  .matrix-wrap { overflow-x: auto; background: #fff; border-radius: 8px; box-shadow: 0 1px 4px rgba(0,0,0,.1); }
+  .matrix-wrap { overflow: auto; max-height: calc(100vh - 280px); background: #fff; border-radius: 8px; box-shadow: 0 1px 4px rgba(0,0,0,.1); }
   table { width: 100%; border-collapse: collapse; font-size: 0.855rem; }
   thead tr { background: #1a3a5c; color: #fff; }
-  thead th { padding: 0.65rem 0.85rem; text-align: left; white-space: nowrap; font-weight: 600; }
+  thead th { padding: 0.65rem 0.85rem; text-align: left; white-space: nowrap; font-weight: 600; position: sticky; top: 0; z-index: 2; background: #1a3a5c; }
+  tbody td:first-child, thead th:first-child { position: sticky; left: 0; z-index: 1; background: inherit; }
+  thead th:first-child { z-index: 3; }
+  tbody tr:nth-child(odd) td:first-child { background: #fff; }
+  tbody tr:nth-child(even) td:first-child { background: #f8fafc; }
+  tbody tr:hover td:first-child { background: #eef3f9; }
   thead th.proj-col { text-align: center; min-width: 110px; }
   tbody tr:nth-child(even) { background: #f8fafc; }
   tbody tr:hover { background: #eef3f9; }
@@ -76,6 +81,22 @@
   }
   .filter-bar select:focus { outline: none; border-color: #1a3a5c; }
   .filter-count { font-size: 0.8rem; color: #888; }
+  .proj-filter-bar {
+    background: #fff; border-radius: 8px; box-shadow: 0 1px 4px rgba(0,0,0,.1);
+    padding: 0.75rem 1.25rem; margin-bottom: 1rem;
+    display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;
+  }
+  .proj-filter-bar label { font-size: 0.8rem; font-weight: 600; color: #555; white-space: nowrap; margin-right: 0.25rem; }
+  .proj-filter-btn {
+    padding: 0.25rem 0.75rem; border-radius: 999px; border: 2px solid transparent;
+    font-size: 0.78rem; font-weight: 600; cursor: pointer; background: #e8f0fe; color: #1a3a5c;
+    transition: opacity .15s, box-shadow .15s;
+  }
+  .proj-filter-btn:hover { opacity: 0.85; }
+  .proj-filter-btn.active { border-color: rgba(0,0,0,.35); box-shadow: 0 0 0 2px rgba(0,0,0,.15); }
+  th.sortable { cursor: pointer; user-select: none; }
+  th.sortable:hover { background: #255480; }
+  th.sortable .sort-indicator { margin-left: 0.3rem; opacity: 0.6; font-size: 0.75rem; }
   .subnav { display: flex; border-bottom: 2px solid #dde; margin-bottom: 1.5rem; }
   .subnav a {
     padding: 0.55rem 1.25rem; font-size: 0.9rem; color: #555; text-decoration: none;
@@ -195,10 +216,30 @@ function projTagStyle(pid) {
 
 {% if employees and projects %}
 
+<div class="proj-filter-bar">
+  <label>Project</label>
+  {% for proj in projects | sort(attribute='project_id') %}
+  {% set pc = proj.project_color or '' %}
+  <button type="button" class="proj-filter-btn" data-pid="{{ proj.project_id }}"
+    onclick="toggleProjCol('{{ proj.project_id }}')"
+    {% if pc %}style="background:{{ pc }};color:{{ 'white' }};"{% endif %}>
+    {{ proj.project_id }}
+  </button>
+  {% endfor %}
+  <button type="button" id="clear-proj-filters" onclick="clearProjCols()"
+    style="display:none;padding:0.25rem 0.75rem;border-radius:4px;border:1px solid #ccd;background:#fff;color:#666;font-size:0.78rem;cursor:pointer;margin-left:0.25rem;">
+    Clear
+  </button>
+</div>
+
 {% set orgs = employees | map(attribute='supervisor_organization') | select | unique | sort | list %}
 <div class="filter-bar">
-  <label for="org-filter">Supervisory Org</label>
-  <select id="org-filter" onchange="filterByOrg(this.value)">
+  <label for="emp-search">Employee</label>
+  <input type="text" id="emp-search" placeholder="Search by name…"
+    oninput="filterRows()"
+    style="padding:0.35rem 0.65rem;border:1px solid #ccd;border-radius:4px;font-size:0.875rem;background:#f9fafc;min-width:220px;">
+  <label for="org-filter" style="margin-left:0.5rem;">Supervisory Org</label>
+  <select id="org-filter" onchange="filterRows()">
     <option value="">— All —</option>
     {% for org in orgs %}
     <option value="{{ org }}">{{ org }}</option>
@@ -212,10 +253,9 @@ function projTagStyle(pid) {
   <table>
     <thead>
       <tr>
-        <th>Employee</th>
-        <th>Job Profile</th>
+        <th class="sortable" onclick="sortByEmployee()" id="emp-th">Employee <span class="sort-indicator" id="sort-indicator">▲</span></th>
         {% for proj in projects %}
-        <th class="proj-col" title="{{ proj.project_description or '' }}">{{ proj.project_id }}</th>
+        <th class="proj-col" data-proj="{{ proj.project_id }}" title="{{ proj.project_description or '' }}">{{ proj.project_id }}</th>
         {% endfor %}
       </tr>
     </thead>
@@ -241,10 +281,9 @@ function projTagStyle(pid) {
           </div>
           <div class="emp-meta">{{ eid }}</div>
         </td>
-        <td>{{ emp.job_profile }}</td>
         {% for proj in projects %}
         {% set assigned = proj.project_id in emp_assignments.get(eid, []) %}
-        <td class="proj-cell {% if assigned %}assigned{% endif %}" id="cell-{{ eid }}-{{ proj.project_id }}">
+        <td class="proj-cell {% if assigned %}assigned{% endif %}" data-proj="{{ proj.project_id }}" id="cell-{{ eid }}-{{ proj.project_id }}">
           <div class="check-wrap">
             <input type="checkbox"
               name="assign_{{ eid }}"
@@ -292,16 +331,76 @@ function projTagStyle(pid) {
     cell.classList.toggle('assigned', checkbox.checked);
   }
 
-  function filterByOrg(org) {
+  function fuzzyMatch(haystack, needle) {
+    if (!needle) return true;
+    const h = haystack.toLowerCase();
+    const n = needle.toLowerCase();
+    let hi = 0;
+    for (let ni = 0; ni < n.length; ni++) {
+      hi = h.indexOf(n[ni], hi);
+      if (hi === -1) return false;
+      hi++;
+    }
+    return true;
+  }
+
+  function filterRows() {
+    const org = document.getElementById('org-filter').value;
+    const search = document.getElementById('emp-search').value.trim();
     const rows = document.querySelectorAll('tbody tr');
     let visible = 0;
     rows.forEach(row => {
-      const match = !org || row.dataset.org === org;
-      row.style.display = match ? '' : 'none';
-      if (match) visible++;
+      const orgMatch = !org || row.dataset.org === org;
+      const nameEl = row.querySelector('.emp-name');
+      const nameMatch = fuzzyMatch(nameEl ? nameEl.textContent.trim() : '', search);
+      const show = orgMatch && nameMatch;
+      row.style.display = show ? '' : 'none';
+      if (show) visible++;
     });
     const count = document.getElementById('filter-count');
-    count.textContent = org ? `${visible} of ${rows.length} employee(s)` : '';
+    count.textContent = (org || search) ? `${visible} of ${rows.length} employee(s)` : '';
+  }
+
+  const selectedCols = new Set();
+
+  function toggleProjCol(pid) {
+    if (selectedCols.has(pid)) {
+      selectedCols.delete(pid);
+    } else {
+      selectedCols.add(pid);
+    }
+    applyColFilter();
+    document.querySelectorAll('.proj-filter-btn').forEach(btn => {
+      btn.classList.toggle('active', selectedCols.has(btn.dataset.pid));
+    });
+    document.getElementById('clear-proj-filters').style.display = selectedCols.size > 0 ? '' : 'none';
+  }
+
+  function clearProjCols() {
+    selectedCols.clear();
+    document.querySelectorAll('.proj-filter-btn').forEach(btn => btn.classList.remove('active'));
+    document.getElementById('clear-proj-filters').style.display = 'none';
+    applyColFilter();
+  }
+
+  function applyColFilter() {
+    document.querySelectorAll('[data-proj]').forEach(el => {
+      el.style.display = selectedCols.size === 0 || selectedCols.has(el.dataset.proj) ? '' : 'none';
+    });
+  }
+
+  let sortAsc = true;
+  function sortByEmployee() {
+    const tbody = document.querySelector('tbody');
+    const rows = Array.from(tbody.querySelectorAll('tr'));
+    rows.sort((a, b) => {
+      const aName = (a.querySelector('.emp-name') || {}).textContent.trim().toLowerCase();
+      const bName = (b.querySelector('.emp-name') || {}).textContent.trim().toLowerCase();
+      return sortAsc ? aName.localeCompare(bName) : bName.localeCompare(aName);
+    });
+    sortAsc = !sortAsc;
+    document.getElementById('sort-indicator').textContent = sortAsc ? '▲' : '▼';
+    rows.forEach(r => tbody.appendChild(r));
   }
 
   function openModal(eid) {

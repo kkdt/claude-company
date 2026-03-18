@@ -475,7 +475,11 @@ def projects_edit(project_id):
 def projects_delete(project_id):
     all_projects = [p for p in load_projects() if p.get("project_id") != project_id]
     save_projects(all_projects)
-    flash(f"Project '{project_id}' deleted.")
+    records = load_staffing()
+    for record in records:
+        record["assignments"] = [a for a in record["assignments"] if a.get("project_id") != project_id]
+    save_staffing(records)
+    flash(f"Project '{project_id}' deleted and removed from all staffing entries.")
     return redirect(url_for("projects"))
 
 
@@ -575,7 +579,7 @@ def staffing_month(year, month):
     record = get_staffing_month(records, year, month)
     assignments = record["assignments"] if record else []
     employees = load_employees()
-    projects = [p for p in load_projects() if p.get("active", True)]
+    projects = sorted([p for p in load_projects() if p.get("active", True)], key=lambda p: p.get("project_id", ""))
     emp_map = {e["employee_id"]: e for e in employees}
     proj_map = {p["project_id"]: p for p in projects}
     # Build per-employee assignment lookup: {employee_id: [project_id, ...]}
@@ -636,8 +640,6 @@ def staffing_month_save(year, month):
 @app.route("/staffing/<int:year>/<int:month>/copy", methods=["POST"])
 def staffing_month_copy(year, month):
     import calendar
-    from datetime import date
-    today = date.today()
     records = load_staffing()
     source = get_staffing_month(records, year, month)
     assignments = source["assignments"] if source else []
@@ -646,9 +648,6 @@ def staffing_month_copy(year, month):
         t_year, t_month = year + 1, 1
     else:
         t_year, t_month = year, month + 1
-    if (t_year, t_month) < (today.year, today.month):
-        flash("Cannot copy into a past month.")
-        return redirect(url_for("staffing_month", year=year, month=month))
     existing = get_staffing_month(records, t_year, t_month)
     if existing:
         existing["assignments"] = list(assignments)
@@ -668,6 +667,15 @@ def staffing_new_month():
         flash("Invalid month.")
         return redirect(url_for("staffing"))
     return redirect(url_for("staffing_month", year=year, month=month))
+
+
+@app.route("/staffing/<int:year>/<int:month>/delete", methods=["POST"])
+def staffing_month_delete(year, month):
+    records = load_staffing()
+    records = [r for r in records if not (r["year"] == year and r["month"] == month)]
+    save_staffing(records)
+    flash(f"Deleted staffing month {year}-{month:02d}.")
+    return redirect(url_for("staffing"))
 
 
 @app.route("/staffing/remove-ghost/<employee_id>", methods=["POST"])

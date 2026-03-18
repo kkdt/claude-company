@@ -61,6 +61,9 @@
   table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
   thead tr { background: #1a3a5c; color: #fff; }
   thead th { padding: 0.7rem 1rem; text-align: left; white-space: nowrap; font-weight: 600; }
+  th.sortable { cursor: pointer; user-select: none; }
+  th.sortable:hover { background: #255480; }
+  th.sortable .sort-indicator { margin-left: 0.3rem; opacity: 0.6; font-size: 0.75rem; }
   tbody tr:nth-child(even) { background: #f8fafc; }
   tbody tr:hover { background: #eef3f9; }
   tbody td { padding: 0.6rem 1rem; border-bottom: 1px solid #e8ecf0; vertical-align: top; }
@@ -127,7 +130,7 @@
     <thead>
       <tr>
         <th></th>
-        <th>Project ID</th>
+        <th class="sortable" onclick="sortByProjectId()">Project ID <span class="sort-indicator" id="sort-indicator">▲</span></th>
         <th>Description</th>
         <th>Active</th>
         <th></th>
@@ -168,6 +171,20 @@
 {% endif %}
 
 <script>
+  let sortAsc = true;
+  function sortByProjectId() {
+    const tbody = document.querySelector('tbody');
+    const rows = Array.from(tbody.querySelectorAll('tr'));
+    rows.sort((a, b) => {
+      const aVal = a.cells[1].textContent.trim().toLowerCase();
+      const bVal = b.cells[1].textContent.trim().toLowerCase();
+      return sortAsc ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
+    });
+    sortAsc = !sortAsc;
+    document.getElementById('sort-indicator').textContent = sortAsc ? '▲' : '▼';
+    rows.forEach(r => tbody.appendChild(r));
+  }
+
   function addAttrRow(key, val) {
     const list = document.getElementById('attr-list');
     const row = document.createElement('div');
