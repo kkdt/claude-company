@@ -98,20 +98,12 @@
     {% endif %}
   </h2>
   <div class="actions">
-    {% if not is_past %}
     <button form="staffing-form" type="submit" class="btn-primary">Save Assignments</button>
-    {% endif %}
     <form method="post" action="{{ url_for('staffing_month_copy', year=year, month=month) }}" style="margin:0;">
       <button type="submit" class="btn-secondary">Copy to Next Month →</button>
     </form>
   </div>
 </div>
-
-{% if is_past %}
-<div class="readonly-note">
-  This is a past month and is read-only. Use "Copy to Next Month" to plan future staffing based on this month.
-</div>
-{% endif %}
 
 {% if not projects %}
 <div class="no-projects">
@@ -166,7 +158,6 @@
               name="assign_{{ eid }}"
               value="{{ proj.project_id }}"
               {% if assigned %}checked{% endif %}
-              {% if is_past %}disabled{% endif %}
               onchange="toggleCell(this, 'cell-{{ eid }}-{{ proj.project_id }}')">
           </div>
         </td>

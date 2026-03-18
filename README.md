@@ -162,3 +162,4 @@ podman run --rm \
 28. Only show active Projects in Staffing Projections filter — Template filters proj_map to proj.active in pill loop.
 29. Allow editing a Project — Added POST /projects/<id>/edit route; edit form below detail view in project_detail.html.
 30. Hide inactive project assignments in Staffing Projections — Route builds active_proj_ids set and skips inactive projects when building month_assignments.
+31. Allow editing of past months in Staffing screens — Removed past-month save guard in route; removed read-only notice, always show Save button, enabled all checkboxes in staffing_month.html.

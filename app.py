@@ -560,9 +560,6 @@ def staffing_month(year, month):
 def staffing_month_save(year, month):
     from datetime import date
     today = date.today()
-    if (year, month) < (today.year, today.month):
-        flash("Past month assignments cannot be modified.")
-        return redirect(url_for("staffing_month", year=year, month=month))
     # Form sends: assign_<employee_id> = [project_id, ...]  (checkboxes)
     employees = load_employees()
     assignments = []
