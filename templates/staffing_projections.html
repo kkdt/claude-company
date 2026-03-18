@@ -29,6 +29,13 @@
     color: #1a3a5c; font-weight: 500; font-size: inherit; font-family: inherit;
   }
   .emp-btn:hover { text-decoration: underline; }
+  tr.emp-missing { background: #fff8e1 !important; }
+  tr.emp-missing td { border-left: 3px solid #f0a500; }
+  .emp-missing-badge {
+    display: inline-block; padding: 0.1rem 0.45rem; border-radius: 3px;
+    font-size: 0.72rem; font-weight: 600; background: #ffe082; color: #795548;
+    margin-left: 0.4rem; vertical-align: middle;
+  }
 
   .proj-tag {
     display: inline-block; margin: 2px; padding: 0.15rem 0.5rem;
@@ -207,18 +214,6 @@ function projTagStyle(pid) {
   </div>
 </form>
 
-{% set orgs = employees | map(attribute='supervisor_organization') | select | unique | sort | list %}
-<div class="filter-bar">
-  <label for="org-filter">Supervisory Org</label>
-  <select id="org-filter" onchange="applyFilters()">
-    <option value="">— All —</option>
-    {% for org in orgs %}
-    <option value="{{ org }}">{{ org }}</option>
-    {% endfor %}
-  </select>
-  <span class="filter-count" id="filter-count"></span>
-</div>
-
 {% if proj_map %}
 <div class="proj-filter-bar">
   <label>Project</label>
@@ -236,6 +231,22 @@ function projTagStyle(pid) {
   </button>
 </div>
 {% endif %}
+
+{% set orgs = employees | map(attribute='supervisor_organization') | select | unique | sort | list %}
+<div class="filter-bar">
+  <label for="emp-search">Employee</label>
+  <input type="text" id="emp-search" placeholder="Search by name…"
+    oninput="applyFilters()"
+    style="padding:0.35rem 0.65rem;border:1px solid #ccd;border-radius:4px;font-size:0.875rem;background:#f9fafc;min-width:220px;">
+  <label for="org-filter" style="margin-left:0.5rem;">Supervisory Org</label>
+  <select id="org-filter" onchange="applyFilters()">
+    <option value="">— All —</option>
+    {% for org in orgs %}
+    <option value="{{ org }}">{{ org }}</option>
+    {% endfor %}
+  </select>
+  <span class="filter-count" id="filter-count"></span>
+</div>
 
 <div class="matrix-wrap">
   <table>
@@ -255,12 +266,24 @@ function projTagStyle(pid) {
     <tbody>
       {% for emp in employees | sort(attribute='employee_name') %}
       {% set eid = emp.employee_id %}
+      {% set missing = emp._missing is defined and emp._missing %}
       {% set all_projs = [] %}
       {% for yr, mo in months %}{% for pid in month_assignments.get((yr, mo), {}).get(eid, []) %}{% if pid not in all_projs %}{% set _ = all_projs.append(pid) %}{% endif %}{% endfor %}{% endfor %}
-      <tr data-org="{{ emp.supervisor_organization or '' }}" data-projects="{{ all_projs | join(',') }}">
+      <tr data-org="{{ emp.supervisor_organization or '' }}" data-projects="{{ all_projs | join(',') }}" {% if missing %}class="emp-missing"{% endif %}>
         <td>
           <div class="emp-name">
+            {% if missing %}
+              <span style="color:#795548;font-style:italic;">{{ emp.employee_name }}</span>
+              <span class="emp-missing-badge">Not found</span>
+              <form method="post" action="{{ url_for('staffing_remove_ghost', employee_id=eid) }}"
+                    onsubmit="return confirm('Remove all staffing assignments for unknown employee \'{{ eid }}\'?');"
+                    style="display:inline;margin-left:0.5rem;">
+                <input type="hidden" name="next" value="{{ request.url }}">
+                <button type="submit" style="padding:0.15rem 0.55rem;font-size:0.75rem;background:#c0392b;color:#fff;border:none;border-radius:3px;cursor:pointer;">Remove</button>
+              </form>
+            {% else %}
             <button class="emp-btn" onclick="openModal('{{ eid }}')">{{ emp.employee_name }}</button>
+            {% endif %}
           </div>
           <div class="emp-meta">{{ eid }}</div>
         </td>
@@ -341,20 +364,37 @@ function projTagStyle(pid) {
     applyFilters();
   }
 
+  function fuzzyMatch(haystack, needle) {
+    if (!needle) return true;
+    const h = haystack.toLowerCase();
+    const n = needle.toLowerCase();
+    let hi = 0;
+    for (let ni = 0; ni < n.length; ni++) {
+      hi = h.indexOf(n[ni], hi);
+      if (hi === -1) return false;
+      hi++;
+    }
+    return true;
+  }
+
   function applyFilters() {
     const org = document.getElementById('org-filter').value;
+    const search = document.getElementById('emp-search').value.trim();
     const rows = document.querySelectorAll('tbody tr');
     let visible = 0;
     rows.forEach(row => {
       const orgMatch = !org || row.dataset.org === org;
       const rowProjs = new Set((row.dataset.projects || '').split(',').filter(Boolean));
       const projMatch = activeProjects.size === 0 || [...activeProjects].some(pid => rowProjs.has(pid));
-      const show = orgMatch && projMatch;
+      const nameEl = row.querySelector('.emp-name');
+      const nameText = nameEl ? nameEl.textContent.trim() : '';
+      const nameMatch = fuzzyMatch(nameText, search);
+      const show = orgMatch && projMatch && nameMatch;
       row.style.display = show ? '' : 'none';
       if (show) visible++;
     });
     const count = document.getElementById('filter-count');
-    const anyFilter = org || activeProjects.size > 0;
+    const anyFilter = org || activeProjects.size > 0 || search;
     count.textContent = anyFilter ? `${visible} of ${rows.length} employee(s)` : '';
   }
 

@@ -51,6 +51,13 @@
   tr:nth-child(even) td.assigned { background: #dff0e8; }
 
   .empty { text-align: center; padding: 3rem; color: #888; }
+  tr.emp-missing { background: #fff8e1 !important; }
+  tr.emp-missing td { border-left: 3px solid #f0a500; }
+  .emp-missing-badge {
+    display: inline-block; padding: 0.1rem 0.45rem; border-radius: 3px;
+    font-size: 0.72rem; font-weight: 600; background: #ffe082; color: #795548;
+    margin-left: 0.4rem; vertical-align: middle;
+  }
   .readonly-note {
     background: #fff8e1; border: 1px solid #ffe082; border-radius: 6px;
     padding: 0.65rem 1rem; font-size: 0.875rem; color: #795548; margin-bottom: 1.25rem;
@@ -140,12 +147,24 @@
     <tbody>
       {% for emp in employees %}
       {% set eid = emp.employee_id %}
-      <tr data-org="{{ emp.supervisor_organization or '' }}">
+      {% set missing = emp._missing is defined and emp._missing %}
+      <tr data-org="{{ emp.supervisor_organization or '' }}" {% if missing %}class="emp-missing"{% endif %}>
         <td>
           <div class="emp-name">
+            {% if missing %}
+              <span style="color:#795548;font-style:italic;">{{ emp.employee_name }}</span>
+              <span class="emp-missing-badge">Not found</span>
+              <form method="post" action="{{ url_for('staffing_remove_ghost', employee_id=eid) }}"
+                    onsubmit="return confirm('Remove all staffing assignments for unknown employee \'{{ eid }}\'?');"
+                    style="display:inline;margin-left:0.5rem;">
+                <input type="hidden" name="next" value="{{ request.path }}">
+                <button type="submit" style="padding:0.15rem 0.55rem;font-size:0.75rem;background:#c0392b;color:#fff;border:none;border-radius:3px;cursor:pointer;">Remove</button>
+              </form>
+            {% else %}
             <a href="{{ url_for('employee_detail', employee_id=eid) }}" style="color:#1a3a5c;text-decoration:none;">
               {{ emp.employee_name }}
             </a>
+            {% endif %}
           </div>
           <div class="emp-meta">{{ eid }}</div>
         </td>

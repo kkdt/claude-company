@@ -502,17 +502,20 @@ def staffing_projections():
     proj_map = {p["project_id"]: p for p in all_projects}
     active_proj_ids = {p["project_id"] for p in all_projects if p.get("active", True)}
 
-    # Determine from/to month range filter (default: current month to end of data)
+    # Determine from/to month range filter (default: current month to next month)
     all_record_months = sorted({(r["year"], r["month"]) for r in records})
-    last_year, last_month = all_record_months[-1] if all_record_months else (today.year, today.month)
+    if today.month == 12:
+        default_to_year, default_to_month = today.year + 1, 1
+    else:
+        default_to_year, default_to_month = today.year, today.month + 1
     try:
         from_year = int(request.args.get("from_year", today.year))
         from_month = int(request.args.get("from_month", today.month))
-        to_year = int(request.args.get("to_year", last_year))
-        to_month = int(request.args.get("to_month", last_month))
+        to_year = int(request.args.get("to_year", default_to_year))
+        to_month = int(request.args.get("to_month", default_to_month))
     except (ValueError, TypeError):
         from_year, from_month = today.year, today.month
-        to_year, to_month = last_year, last_month
+        to_year, to_month = default_to_year, default_to_month
 
     filtered = sorted(
         [r for r in records if (from_year, from_month) <= (r["year"], r["month"]) <= (to_year, to_month)],
@@ -520,10 +523,13 @@ def staffing_projections():
     )
 
     month_assignments = {}
+    stored_names = {}
     for r in filtered:
         key = (r["year"], r["month"])
         emp_proj = {}
         for a in r["assignments"]:
+            if "employee_name" in a:
+                stored_names[a["employee_id"]] = a["employee_name"]
             if a["project_id"] in active_proj_ids:
                 emp_proj.setdefault(a["employee_id"], []).append(a["project_id"])
         month_assignments[key] = emp_proj
@@ -531,16 +537,31 @@ def staffing_projections():
     months = [(r["year"], r["month"]) for r in filtered]
     all_record_months = sorted({(r["year"], r["month"]) for r in records})
 
+    # Add ghost rows for assigned employee_ids not found in the employee list
+    known_ids = {e["employee_id"] for e in employees}
+    ghost_ids = set()
+    for emp_proj in month_assignments.values():
+        for eid in emp_proj:
+            if eid not in known_ids:
+                ghost_ids.add(eid)
+    ghost_employees = [{"employee_id": eid, "employee_name": stored_names.get(eid, eid),
+                        "job_profile": "", "supervisor_organization": "", "location": "",
+                        "_missing": True}
+                       for eid in sorted(ghost_ids)]
+    employees_all = employees + ghost_employees
+
     return render_template(
         "staffing_projections.html",
         months=months,
-        employees=employees,
+        employees=employees_all,
         proj_map=proj_map,
         month_assignments=month_assignments,
         today_year=today.year,
         today_month=today.month,
         from_year=from_year,
         from_month=from_month,
+        to_year=to_year,
+        to_month=to_month,
         all_record_months=all_record_months,
     )
 
@@ -558,14 +579,28 @@ def staffing_month(year, month):
     emp_map = {e["employee_id"]: e for e in employees}
     proj_map = {p["project_id"]: p for p in projects}
     # Build per-employee assignment lookup: {employee_id: [project_id, ...]}
+    # Also capture stored employee_name from assignments for ghost resolution
     emp_assignments = {}
+    stored_names = {}
     for a in assignments:
         emp_assignments.setdefault(a["employee_id"], []).append(a["project_id"])
+        if "employee_name" in a:
+            stored_names[a["employee_id"]] = a["employee_name"]
+    # Add ghost rows for assigned employee_ids not found in the employee list
+    ghost_employees = []
+    for eid in emp_assignments:
+        if eid not in emp_map:
+            name = stored_names.get(eid, eid)
+            ghost = {"employee_id": eid, "employee_name": name, "job_profile": "",
+                     "supervisor_organization": "", "_missing": True}
+            ghost_employees.append(ghost)
+            emp_map[eid] = ghost
+    employees_all = employees + sorted(ghost_employees, key=lambda e: e["employee_id"])
     return render_template(
         "staffing_month.html",
         year=year, month=month,
         is_past=is_past,
-        employees=employees,
+        employees=employees_all,
         projects=projects,
         emp_map=emp_map,
         proj_map=proj_map,
@@ -586,7 +621,7 @@ def staffing_month_save(year, month):
         eid = emp["employee_id"]
         project_ids = request.form.getlist(f"assign_{eid}")
         for pid in project_ids:
-            assignments.append({"employee_id": eid, "project_id": pid})
+            assignments.append({"employee_id": eid, "employee_name": emp.get("employee_name", eid), "project_id": pid})
     records = load_staffing()
     existing = get_staffing_month(records, year, month)
     if existing:
@@ -633,6 +668,23 @@ def staffing_new_month():
         flash("Invalid month.")
         return redirect(url_for("staffing"))
     return redirect(url_for("staffing_month", year=year, month=month))
+
+
+@app.route("/staffing/remove-ghost/<employee_id>", methods=["POST"])
+def staffing_remove_ghost(employee_id):
+    records = load_staffing()
+    emp_map = {e["employee_id"]: e for e in load_employees()}
+    if employee_id in emp_map:
+        flash("Employee exists in the system; cannot remove via this action.")
+        return redirect(url_for("staffing"))
+    for record in records:
+        record["assignments"] = [
+            a for a in record["assignments"] if a["employee_id"] != employee_id
+        ]
+    save_staffing(records)
+    flash(f"Removed all assignments for unknown employee '{employee_id}'.")
+    next_url = request.form.get("next") or url_for("staffing")
+    return redirect(next_url)
 
 
 if __name__ == "__main__":
