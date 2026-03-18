@@ -395,7 +395,7 @@ def projects_create():
         flash(f"Project '{project_id}' already exists.")
         return redirect(url_for("projects"))
     project_color = request.form.get("project_color", "").strip()
-    active = request.form.get("active") == "1"
+    active = True
     keys = request.form.getlist("attr_key")
     values = request.form.getlist("attr_value")
     attributes = [{"key": k.strip(), "value": v.strip()} for k, v in zip(keys, values) if k.strip()]
