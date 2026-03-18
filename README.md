@@ -170,3 +170,6 @@ podman run --rm \
 36. For Staffing screens, include employee_name with staffing assignments
 37. On Staffing Projections, move the Project filter up above the Supervisory Org drop down filter 
 38. On Staffing Projections, add a text field that does a fuzzy search on employee_name and filters the results
+39. When updating a project, ensure that the project is active when the checkbox is checked
+40. When viewing Staffing Month, when clicking on an employee, display details in a modal
+41. Ensure that the employee modal is displayed on the right screen
