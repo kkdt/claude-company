@@ -158,3 +158,7 @@ podman run --rm \
 24. Update Projects screen with "active" checkbox — Checkbox (checked by default) in create form; Active column in table; Active field in detail page; projects_create saves as boolean.
 25. Add Delete button to Projects screen — Inline delete form with confirmation per row.
 26. Add Export to Projects screen — GET /projects/export exports projects.csv with all core fields + attributes; Export to CSV button in toolbar.
+27. Only display active Projects in Staffing Month screen — Filtered load_projects() to active == True in staffing_month route.
+28. Only show active Projects in Staffing Projections filter — Template filters proj_map to proj.active in pill loop.
+29. Allow editing a Project — Added POST /projects/<id>/edit route; edit form below detail view in project_detail.html.
+30. Hide inactive project assignments in Staffing Projections — Route builds active_proj_ids set and skips inactive projects when building month_assignments.

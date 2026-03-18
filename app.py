@@ -453,6 +453,24 @@ def projects_detail(project_id):
     return render_template("project_detail.html", project=project)
 
 
+@app.route("/projects/<project_id>/edit", methods=["POST"])
+def projects_edit(project_id):
+    all_projects = load_projects()
+    project = next((p for p in all_projects if p.get("project_id") == project_id), None)
+    if project is None:
+        flash(f"Project '{project_id}' not found.")
+        return redirect(url_for("projects"))
+    project["project_description"] = request.form.get("project_description", "").strip()
+    project["project_color"] = request.form.get("project_color", "").strip()
+    project["active"] = request.form.get("active") == "1"
+    keys = request.form.getlist("attr_key")
+    values = request.form.getlist("attr_value")
+    project["attributes"] = [{"key": k.strip(), "value": v.strip()} for k, v in zip(keys, values) if k.strip()]
+    save_projects(all_projects)
+    flash(f"Project '{project_id}' updated.")
+    return redirect(url_for("projects_detail", project_id=project_id))
+
+
 @app.route("/projects/<project_id>/delete", methods=["POST"])
 def projects_delete(project_id):
     all_projects = [p for p in load_projects() if p.get("project_id") != project_id]
@@ -487,12 +505,14 @@ def staffing_projections():
         key=lambda r: (r["year"], r["month"])
     )
     # Build lookup: {(year, month): {employee_id: [project_id, ...]}}
+    active_proj_ids = {p["project_id"] for p in load_projects() if p.get("active", True)}
     month_assignments = {}
     for r in future:
         key = (r["year"], r["month"])
         emp_proj = {}
         for a in r["assignments"]:
-            emp_proj.setdefault(a["employee_id"], []).append(a["project_id"])
+            if a["project_id"] in active_proj_ids:
+                emp_proj.setdefault(a["employee_id"], []).append(a["project_id"])
         month_assignments[key] = emp_proj
     months = [(r["year"], r["month"]) for r in future]
     return render_template(
@@ -515,7 +535,7 @@ def staffing_month(year, month):
     record = get_staffing_month(records, year, month)
     assignments = record["assignments"] if record else []
     employees = load_employees()
-    projects = load_projects()
+    projects = [p for p in load_projects() if p.get("active", True)]
     emp_map = {e["employee_id"]: e for e in employees}
     proj_map = {p["project_id"]: p for p in projects}
     # Build per-employee assignment lookup: {employee_id: [project_id, ...]}

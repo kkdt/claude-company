@@ -21,7 +21,6 @@
   }
   .field-value { padding: 0.65rem 0; font-size: 0.9rem; color: #222; }
   .field-value.empty { color: #aaa; font-style: italic; }
-
   .section-title {
     font-size: 0.8rem; font-weight: 700; color: #1a3a5c; text-transform: uppercase;
     letter-spacing: 0.05em; margin: 1.5rem 0 0.75rem;
@@ -32,17 +31,55 @@
   .attrs-table tbody td { padding: 0.5rem 0.75rem; border-bottom: 1px solid #eef; }
   .attrs-table tbody tr:last-child td { border-bottom: none; }
   .no-attrs { font-size: 0.875rem; color: #aaa; font-style: italic; }
-
   .actions { display: flex; gap: 0.75rem; }
   .btn-danger {
     padding: 0.35rem 0.9rem; font-size: 0.85rem; background: #c0392b; color: #fff;
     border: none; border-radius: 4px; cursor: pointer;
   }
   .btn-danger:hover { background: #a93226; }
+
+  /* Edit form */
+  .edit-card {
+    background: #fff; border-radius: 8px; box-shadow: 0 1px 4px rgba(0,0,0,.1); overflow: hidden;
+    margin-bottom: 1.5rem;
+  }
+  .edit-header {
+    background: #f0f4f8; padding: 0.75rem 1.5rem; border-bottom: 1px solid #dde;
+    font-size: 0.95rem; font-weight: 600; color: #1a3a5c;
+  }
+  .edit-body { padding: 1.25rem 1.5rem; }
+  .form-row { display: flex; gap: 0.75rem; align-items: flex-end; flex-wrap: wrap; margin-bottom: 1rem; }
+  .form-group { display: flex; flex-direction: column; gap: 0.3rem; }
+  .form-group label { font-size: 0.8rem; font-weight: 600; color: #555; }
+  .form-group input[type="text"] {
+    padding: 0.4rem 0.65rem; border: 1px solid #ccd; border-radius: 4px;
+    font-size: 0.875rem; background: #f9fafc;
+  }
+  .form-group input[type="text"]:focus { outline: none; border-color: #1a3a5c; background: #fff; }
+  .btn-primary {
+    padding: 0.4rem 1rem; font-size: 0.875rem; background: #1a3a5c; color: #fff;
+    border: none; border-radius: 4px; cursor: pointer;
+  }
+  .btn-primary:hover { background: #255480; }
+  .btn-secondary {
+    padding: 0.35rem 0.85rem; font-size: 0.85rem; background: #fff; color: #1a3a5c;
+    border: 1px solid #1a3a5c; border-radius: 4px; cursor: pointer;
+  }
+  .btn-secondary:hover { background: #eef3f9; }
+  .btn-icon { padding: 0.25rem 0.5rem; font-size: 0.85rem; background: none; border: none; cursor: pointer; color: #c0392b; }
+  .btn-icon:hover { color: #a93226; }
+  .attrs-label { font-size: 0.8rem; font-weight: 600; color: #555; margin-bottom: 0.5rem; }
+  .attr-row { display: flex; gap: 0.5rem; align-items: center; margin-bottom: 0.4rem; }
+  .attr-row input { padding: 0.35rem 0.6rem; border: 1px solid #ccd; border-radius: 4px; font-size: 0.855rem; background: #f9fafc; }
+  .attr-row input:focus { outline: none; border-color: #1a3a5c; background: #fff; }
+  .attr-key { width: 180px; }
+  .attr-val { width: 260px; }
+  .attrs-sep { border: none; border-top: 1px solid #e8ecf0; margin: 1rem 0; }
 </style>
 
 <a class="back-link" href="{{ url_for('projects') }}">← Back to Projects</a>
 
+<!-- Detail view -->
 <div class="detail-card">
   <div class="detail-header" {% if project.project_color %}style="background:{{ project.project_color }};"{% endif %}>
     <h2>{{ project.project_id }}</h2>
@@ -66,19 +103,14 @@
           <span style="display:inline-block;width:18px;height:18px;border-radius:50%;background:{{ project.project_color }};border:1px solid rgba(0,0,0,.15);"></span>
           {{ project.project_color }}
         </span>
-        {% else %}
-        <span class="empty">No color set</span>
-        {% endif %}
+        {% else %}<span class="empty">No color set</span>{% endif %}
       </div>
     </div>
     <div class="field-row">
       <div class="field-label">Active</div>
       <div class="field-value">
-        {% if project.active %}
-        <span style="color:#2e7d4f;font-weight:600;">&#10003; Yes</span>
-        {% else %}
-        <span style="color:#aaa;">No</span>
-        {% endif %}
+        {% if project.active %}<span style="color:#2e7d4f;font-weight:600;">&#10003; Yes</span>
+        {% else %}<span style="color:#aaa;">No</span>{% endif %}
       </div>
     </div>
     <div class="field-row">
@@ -87,22 +119,13 @@
         {{ project.project_description or 'No description' }}
       </div>
     </div>
-
     <div class="section-title">Attributes</div>
     {% if project.attributes %}
     <table class="attrs-table">
-      <thead>
-        <tr>
-          <th>Name</th>
-          <th>Value</th>
-        </tr>
-      </thead>
+      <thead><tr><th>Name</th><th>Value</th></tr></thead>
       <tbody>
         {% for attr in project.attributes %}
-        <tr>
-          <td>{{ attr.key }}</td>
-          <td>{{ attr.value }}</td>
-        </tr>
+        <tr><td>{{ attr.key }}</td><td>{{ attr.value }}</td></tr>
         {% endfor %}
       </tbody>
     </table>
@@ -111,4 +134,64 @@
     {% endif %}
   </div>
 </div>
+
+<!-- Edit form -->
+<div class="edit-card">
+  <div class="edit-header">Edit Project</div>
+  <div class="edit-body">
+    <form method="post" action="{{ url_for('projects_edit', project_id=project.project_id) }}">
+      <div class="form-row">
+        <div class="form-group">
+          <label for="project_description">Description</label>
+          <input type="text" id="project_description" name="project_description"
+                 value="{{ project.project_description or '' }}" placeholder="Optional description" style="width:340px;">
+        </div>
+        <div class="form-group">
+          <label for="project_color">Color</label>
+          <input type="color" id="project_color" name="project_color"
+                 value="{{ project.project_color or '#1a3a5c' }}"
+                 style="width:48px;height:34px;padding:2px;border:1px solid #ccd;border-radius:4px;cursor:pointer;background:#f9fafc;">
+        </div>
+        <div class="form-group" style="justify-content:flex-end;">
+          <label for="active" style="display:flex;align-items:center;gap:0.4rem;cursor:pointer;font-weight:600;color:#555;font-size:0.8rem;">
+            <input type="hidden" name="active" value="0">
+            <input type="checkbox" id="active" name="active" value="1"
+                   {% if project.active %}checked{% endif %}
+                   style="width:15px;height:15px;accent-color:#1a3a5c;cursor:pointer;">
+            Active
+          </label>
+        </div>
+      </div>
+
+      <div class="attrs-label">Attributes</div>
+      <div id="attr-list">
+        {% for attr in project.attributes %}
+        <div class="attr-row">
+          <input class="attr-key" type="text" name="attr_key" placeholder="Attribute name" value="{{ attr.key }}">
+          <input class="attr-val" type="text" name="attr_value" placeholder="Value" value="{{ attr.value }}">
+          <button type="button" class="btn-icon" title="Remove" onclick="this.parentElement.remove()">✕</button>
+        </div>
+        {% endfor %}
+      </div>
+      <button type="button" class="btn-secondary" onclick="addAttrRow()">+ Add Attribute</button>
+
+      <hr class="attrs-sep">
+      <button type="submit" class="btn-primary">Save Changes</button>
+    </form>
+  </div>
+</div>
+
+<script>
+  function addAttrRow(key, val) {
+    const list = document.getElementById('attr-list');
+    const row = document.createElement('div');
+    row.className = 'attr-row';
+    row.innerHTML =
+      '<input class="attr-key" type="text" name="attr_key" placeholder="Attribute name" value="' + (key || '') + '">' +
+      '<input class="attr-val" type="text" name="attr_value" placeholder="Value" value="' + (val || '') + '">' +
+      '<button type="button" class="btn-icon" title="Remove" onclick="this.parentElement.remove()">✕</button>';
+    list.appendChild(row);
+    row.querySelector('.attr-key').focus();
+  }
+</script>
 {% endblock %}

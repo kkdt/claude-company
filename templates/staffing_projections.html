@@ -189,7 +189,7 @@ function projTagStyle(pid) {
 {% if proj_map %}
 <div class="proj-filter-bar">
   <label>Project</label>
-  {% for pid, proj in proj_map.items() | sort %}
+  {% for pid, proj in proj_map.items() | sort if proj.active %}
   {% set pc = proj.project_color or '' %}
   <button type="button" class="proj-filter-btn" data-pid="{{ pid }}"
     onclick="toggleProjFilter('{{ pid }}')"
