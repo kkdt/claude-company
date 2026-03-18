@@ -16,6 +16,7 @@ PROJECT_FIELD_MAP = {
     "Project": "project_id",
     "Description": "project_description",
     "Color": "project_color",
+    "Active": "active",
 }
 
 FIELD_MAP = {
@@ -83,7 +84,11 @@ def parse_projects_csv(file_stream):
         attributes = []
         for header, value in row.items():
             if header in PROJECT_FIELD_MAP:
-                project[PROJECT_FIELD_MAP[header]] = value
+                key = PROJECT_FIELD_MAP[header]
+                if key == "active":
+                    project[key] = value.strip().lower() in ("1", "true", "yes")
+                else:
+                    project[key] = value
             else:
                 attributes.append({"key": header, "value": value})
         project["attributes"] = attributes
@@ -390,14 +395,53 @@ def projects_create():
         flash(f"Project '{project_id}' already exists.")
         return redirect(url_for("projects"))
     project_color = request.form.get("project_color", "").strip()
+    active = request.form.get("active") == "1"
     keys = request.form.getlist("attr_key")
     values = request.form.getlist("attr_value")
     attributes = [{"key": k.strip(), "value": v.strip()} for k, v in zip(keys, values) if k.strip()]
-    project = {"project_id": project_id, "project_description": project_description, "project_color": project_color, "attributes": attributes}
+    project = {"project_id": project_id, "project_description": project_description, "project_color": project_color, "active": active, "attributes": attributes}
     all_projects.append(project)
     save_projects(all_projects)
     flash(f"Project '{project_id}' created.")
     return redirect(url_for("projects"))
+
+
+@app.route("/projects/export")
+def projects_export():
+    all_projects = load_projects()
+    if not all_projects:
+        flash("No projects to export.")
+        return redirect(url_for("projects"))
+
+    reverse_map = {v: k for k, v in PROJECT_FIELD_MAP.items()}
+    core_headers = [reverse_map[f] for f in ["project_id", "project_description", "project_color", "active"]]
+
+    attr_keys, seen = [], set()
+    for p in all_projects:
+        for attr in p.get("attributes", []):
+            if attr["key"] not in seen:
+                attr_keys.append(attr["key"])
+                seen.add(attr["key"])
+
+    output = io.StringIO()
+    writer = csv.DictWriter(output, fieldnames=core_headers + attr_keys, extrasaction="ignore")
+    writer.writeheader()
+    for p in all_projects:
+        row = {
+            reverse_map["project_id"]: p.get("project_id", ""),
+            reverse_map["project_description"]: p.get("project_description", ""),
+            reverse_map["project_color"]: p.get("project_color", ""),
+            reverse_map["active"]: "true" if p.get("active") else "false",
+        }
+        for attr in p.get("attributes", []):
+            row[attr["key"]] = attr["value"]
+        writer.writerow(row)
+
+    return Response(
+        output.getvalue(),
+        mimetype="text/csv",
+        headers={"Content-Disposition": "attachment; filename=projects.csv"}
+    )
 
 
 @app.route("/projects/<project_id>")

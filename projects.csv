@@ -1,21 +1,20 @@
-Project,Description,Status,Budget (USD),Project Manager,Start Date,Priority,Color
-PRJ-001,Redesign the company website to improve user experience and mobile responsiveness,In Progress,120000,Alice Johnson,2026-01-15,High,#E63946
-PRJ-002,Develop an internal HR management system for tracking employee performance,Planning,95000,Bob Martinez,2026-02-01,Medium,#F4A261
-PRJ-003,Migrate on-premise data infrastructure to AWS cloud platform,Completed,210000,Carol Smith,2025-09-10,High,#2A9D8F
-PRJ-004,Launch a customer loyalty rewards program for retail stores,In Progress,75000,David Lee,2026-01-20,Medium,#8338EC
-PRJ-005,Build a real-time inventory tracking system for warehouse operations,Planning,130000,Eva Chen,2026-03-01,High,#3A86FF
-PRJ-006,Implement an AI-powered chatbot for customer support automation,In Progress,88000,Frank Nguyen,2026-02-10,High,#FB5607
-PRJ-007,Create a mobile app for employee shift scheduling and time tracking,On Hold,60000,Grace Kim,2025-11-05,Low,#FFBE0B
-PRJ-008,Conduct a cybersecurity audit and deploy endpoint protection solutions,Completed,45000,Henry Patel,2025-08-20,Critical,#06D6A0
-PRJ-009,Develop a data analytics dashboard for sales and revenue reporting,In Progress,99000,Isla Robinson,2026-01-08,High,#118AB2
-PRJ-010,Establish a green energy initiative to reduce office carbon footprint,Planning,55000,James O'Brien,2026-04-01,Low,#6A994E
-PRJ-011,Design and roll out a new employee onboarding training program,Completed,32000,Karen White,2025-10-15,Medium,#C77DFF
-PRJ-012,Integrate a CRM system with existing marketing automation tools,In Progress,74000,Liam Torres,2026-02-18,Medium,#FF6B6B
-PRJ-013,Build an e-commerce platform with multi-currency payment support,Planning,185000,Mia Patel,2026-03-10,High,#4ECDC4
-PRJ-014,Deploy a machine learning model for predictive maintenance in manufacturing,In Progress,160000,Noah Garcia,2026-01-25,Critical,#FF9F1C
-PRJ-015,Create a content management system for the marketing team,Completed,42000,Olivia Brown,2025-12-01,Low,#A8DADC
-PRJ-016,Develop a supplier portal for streamlining procurement workflows,On Hold,91000,Paul Wilson,2025-10-30,Medium,#D62828
-PRJ-017,Launch an internal knowledge base and documentation hub,In Progress,38000,Quinn Davis,2026-02-05,Low,#52B788
-PRJ-018,Implement a DevOps CI/CD pipeline for faster software deployments,Completed,67000,Rachel Moore,2025-11-20,High,#7B2FBE
-PRJ-019,Design a brand refresh including new logo, colors, and style guidelines,Planning,50000,Samuel Clark,2026-03-15,Medium,#F72585
-PRJ-020,Build a cross-platform video conferencing tool for remote teams,In Progress,142000,Tina Evans,2026-01-30,High,#0096C7
+"Project","Description","Status","Budget (USD)","Project Manager","Start Date","Priority","Color","Active"
+"PRJ-001","Redesign the company website to improve user experience and mobile responsiveness","In Progress","120000","Alice Johnson","2026-01-15","High","#E63946","true"
+"PRJ-002","Develop an internal HR management system for tracking employee performance","Planning","95000","Bob Martinez","2026-02-01","Medium","#F4A261","false"
+"PRJ-003","Migrate on-premise data infrastructure to AWS cloud platform","Completed","210000","Carol Smith","2025-09-10","High","#2A9D8F","false"
+"PRJ-004","Launch a customer loyalty rewards program for retail stores","In Progress","75000","David Lee","2026-01-20","Medium","#8338EC","true"
+"PRJ-005","Build a real-time inventory tracking system for warehouse operations","Planning","130000","Eva Chen","2026-03-01","High","#3A86FF","true"
+"PRJ-006","Implement an AI-powered chatbot for customer support automation","In Progress","88000","Frank Nguyen","2026-02-10","High","#FB5607","true"
+"PRJ-007","Create a mobile app for employee shift scheduling and time tracking","On Hold","60000","Grace Kim","2025-11-05","Low","#FFBE0B","false"
+"PRJ-008","Conduct a cybersecurity audit and deploy endpoint protection solutions","Completed","45000","Henry Patel","2025-08-20","Critical","#06D6A0","false"
+"PRJ-009","Develop a data analytics dashboard for sales and revenue reporting","In Progress","99000","Isla Robinson","2026-01-08","High","#118AB2","true"
+"PRJ-010","Establish a green energy initiative to reduce office carbon footprint","Planning","55000","James O'Brien","2026-04-01","Low","#6A994E","false"
+"PRJ-011","Design and roll out a new employee onboarding training program","Completed","32000","Karen White","2025-10-15","Medium","#C77DFF","true"
+"PRJ-012","Integrate a CRM system with existing marketing automation tools","In Progress","74000","Liam Torres","2026-02-18","Medium","#FF6B6B","true"
+"PRJ-013","Build an e-commerce platform with multi-currency payment support","Planning","185000","Mia Patel","2026-03-10","High","#4ECDC4","false"
+"PRJ-014","Deploy a machine learning model for predictive maintenance in manufacturing","In Progress","160000","Noah Garcia","2026-01-25","Critical","#FF9F1C","true"
+"PRJ-015","Create a content management system for the marketing team","Completed","42000","Olivia Brown","2025-12-01","Low","#A8DADC","false"
+"PRJ-016","Develop a supplier portal for streamlining procurement workflows","On Hold","91000","Paul Wilson","2025-10-30","Medium","#D62828","false"
+"PRJ-017","Launch an internal knowledge base and documentation hub","In Progress","38000","Quinn Davis","2026-02-05","Low","#52B788","true"
+"PRJ-018","Implement a DevOps CI/CD pipeline for faster software deployments","Completed","67000","Rachel Moore","2025-11-20","High","#7B2FBE","true"
+"PRJ-020","Build a cross-platform video conferencing tool for remote teams","In Progress","142000","Tina Evans","2026-01-30","High","#0096C7","true"

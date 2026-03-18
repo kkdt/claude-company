@@ -154,3 +154,7 @@ podman run --rm \
 20. Add clear all project filters — Clear button appears when any project filter is active; hides when none selected.
 21. Add Render button to Organization screen — Dark terminal-style modal renders org chart as ASCII tree with ├──/└── connectors; names in blue, metadata in green; reflects live drag-and-drop state.
 22. Remove View Chart button and associated libraries — Removed button, .btn-chart style, GET /organization/chart route, and deleted organization_chart.html.
+23. Update Project model — "Active" maps to active — Added to PROJECT_FIELD_MAP; parse_projects_csv coerces string to boolean ("1"/"true"/"yes" → true).
+24. Update Projects screen with "active" checkbox — Checkbox (checked by default) in create form; Active column in table; Active field in detail page; projects_create saves as boolean.
+25. Add Delete button to Projects screen — Inline delete form with confirmation per row.
+26. Add Export to Projects screen — GET /projects/export exports projects.csv with all core fields + attributes; Export to CSV button in toolbar.

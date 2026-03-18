@@ -72,6 +72,16 @@
       </div>
     </div>
     <div class="field-row">
+      <div class="field-label">Active</div>
+      <div class="field-value">
+        {% if project.active %}
+        <span style="color:#2e7d4f;font-weight:600;">&#10003; Yes</span>
+        {% else %}
+        <span style="color:#aaa;">No</span>
+        {% endif %}
+      </div>
+    </div>
+    <div class="field-row">
       <div class="field-label">Description</div>
       <div class="field-value {% if not project.project_description %}empty{% endif %}">
         {{ project.project_description or 'No description' }}
