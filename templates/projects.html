@@ -67,10 +67,16 @@
   tbody tr:nth-child(even) { background: #f8fafc; }
   tbody tr:hover { background: #eef3f9; }
   tbody td { padding: 0.6rem 1rem; border-bottom: 1px solid #e8ecf0; vertical-align: top; }
-  details summary { cursor: pointer; color: #1a3a5c; font-size: 0.82rem; }
-  details ul { margin-top: 0.4rem; padding-left: 1rem; list-style: none; }
-  details ul li { font-size: 0.8rem; color: #444; line-height: 1.6; }
-  details ul li span { font-weight: 600; }
+  details summary { cursor: pointer; font-size: 0.875rem; font-weight: 600; color: #1a3a5c; list-style: none; display: flex; align-items: center; gap: 0.4rem; margin-top: 0.75rem; }
+  details summary::-webkit-details-marker { display: none; }
+  details summary::before { content: '▶'; font-size: 0.65rem; transition: transform .15s; }
+  details[open] summary::before { transform: rotate(90deg); }
+  .schema-table { width: 100%; border-collapse: collapse; font-size: 0.82rem; margin-top: 0.75rem; }
+  .schema-table th { text-align: left; padding: 0.35rem 0.6rem; background: #f0f4f8; color: #444; font-weight: 600; border-bottom: 2px solid #dde; }
+  .schema-table td { padding: 0.35rem 0.6rem; border-bottom: 1px solid #eef; vertical-align: top; }
+  .schema-table tr:last-child td { border-bottom: none; }
+  .schema-table td:first-child { font-family: monospace; color: #1a3a5c; white-space: nowrap; }
+  .schema-table td:last-child { color: #555; }
   .empty { text-align: center; padding: 3rem; color: #888; }
 </style>
 
@@ -93,7 +99,21 @@
       <button type="submit" class="btn-primary">Import</button>
     </div>
   </form>
-  <p class="hint">CSV must include a "Project" column. Optional: "Description", "Color". Any other columns become attributes.</p>
+  <details>
+    <summary>CSV Schema Reference</summary>
+    <table class="schema-table">
+      <thead>
+        <tr><th>CSV Header</th><th>JSON Key</th><th>Notes</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Project</td><td>project_id</td><td>Required</td></tr>
+        <tr><td>Description</td><td>project_description</td><td></td></tr>
+        <tr><td>Color</td><td>project_color</td><td>HTML color code (e.g. #1a3a5c)</td></tr>
+        <tr><td>Active</td><td>active</td><td>1 / true / yes → active</td></tr>
+        <tr><td><em>Any other header</em></td><td>attributes</td><td>Stored as key-value pairs</td></tr>
+      </tbody>
+    </table>
+  </details>
 </div>
 
 <!-- Create project form -->

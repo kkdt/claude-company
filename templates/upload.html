@@ -38,11 +38,11 @@
 
   /* Preview table */
   .table-wrap { overflow-x: auto; background: #fff; border-radius: 8px; box-shadow: 0 1px 4px rgba(0,0,0,.1); margin-bottom: 1.25rem; }
-  table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
-  thead tr { background: #1a3a5c; color: #fff; }
-  thead th { padding: 0.5rem 0.75rem; text-align: left; white-space: nowrap; font-weight: 600; }
-  tbody tr:nth-child(even) { background: #f8fafc; }
-  tbody td { padding: 0.45rem 0.75rem; border-bottom: 1px solid #e8ecf0; white-space: nowrap; max-width: 200px; overflow: hidden; text-overflow: ellipsis; }
+  .table-wrap table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
+  .table-wrap thead tr { background: #1a3a5c; color: #fff; }
+  .table-wrap thead th { padding: 0.5rem 0.75rem; text-align: left; white-space: nowrap; font-weight: 600; }
+  .table-wrap tbody tr:nth-child(even) { background: #f8fafc; }
+  .table-wrap tbody td { padding: 0.45rem 0.75rem; border-bottom: 1px solid #e8ecf0; white-space: nowrap; max-width: 200px; overflow: hidden; text-overflow: ellipsis; }
   .preview-meta { font-size: 0.85rem; color: #555; margin-bottom: 0.75rem; }
   .preview-meta strong { color: #222; }
   .btn-toggle-salary {
@@ -54,6 +54,27 @@
   .btn-toggle-salary.active:hover { background: #255480; }
   .salary-value { filter: blur(4px); user-select: none; transition: filter 0.2s; display: inline-block; }
   .salary-value.revealed { filter: none; user-select: auto; }
+
+  /* Schema reference */
+  .schema-details { margin-top: 1.25rem; border-top: 1px solid #e8ecf0; padding-top: 0.85rem; }
+  .schema-details summary {
+    cursor: pointer; font-size: 0.85rem; font-weight: 600; color: #1a3a5c;
+    list-style: none; display: flex; align-items: center; gap: 0.4rem;
+  }
+  .schema-details summary::-webkit-details-marker { display: none; }
+  .schema-details summary::before { content: '▶'; font-size: 0.6rem; transition: transform .15s; }
+  .schema-details[open] summary::before { transform: rotate(90deg); }
+  .schema-scroll { margin-top: 0.75rem; }
+  .schema-table { width: 100%; border-collapse: collapse; font-size: 0.8rem; table-layout: fixed; }
+  .schema-table col.col-header { width: 42%; }
+  .schema-table col.col-key    { width: 28%; }
+  .schema-table col.col-notes  { width: 30%; }
+  .schema-table th { text-align: left; padding: 0.35rem 0.6rem; background: #f0f4f8; color: #444; font-weight: 600; border-bottom: 2px solid #dde; }
+  .schema-table td { padding: 0.35rem 0.6rem; border-bottom: 1px solid #eef; vertical-align: top; word-break: break-word; }
+  .schema-table tr:last-child td { border-bottom: none; }
+  .schema-table td:first-child { font-family: monospace; color: #1a3a5c; }
+  .schema-table td:last-child { color: #555; }
+  .schema-section-label { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #888; padding: 0.6rem 0.6rem 0.2rem; }
 
   /* Diff summary bar */
   .diff-summary {
@@ -102,6 +123,33 @@
   <form action="{{ url_for('import_example') }}" method="post" style="display:inline;">
     <button type="submit" class="btn-example">Import Example</button>
   </form>
+
+  <details class="schema-details">
+    <summary>CSV Schema Reference</summary>
+    <div class="schema-scroll">
+      <table class="schema-table">
+        <colgroup>
+          <col class="col-header"><col class="col-key"><col class="col-notes">
+        </colgroup>
+        <thead>
+          <tr><th>CSV Header</th><th>JSON Key</th><th>Notes</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Employee ID</td><td>employee_id</td><td></td></tr>
+          <tr><td>Last Name, First Name</td><td>employee_name</td><td></td></tr>
+          <tr><td>Job Profile</td><td>job_profile</td><td></td></tr>
+          <tr><td>Supervisory Organization</td><td>supervisor_organization</td><td>Supervisor name with Employee ID in parentheses</td></tr>
+          <tr><td>Current Hourly Rate</td><td>hourly_rate</td><td></td></tr>
+          <tr><td>Current Annual Salary</td><td>annual_salary</td><td></td></tr>
+          <tr><td>Location City, State</td><td>location</td><td></td></tr>
+          <tr><td>Grade Profile Minimum</td><td>salary_min</td><td></td></tr>
+          <tr><td>Grade Profile Midpoint</td><td>salary_mid</td><td></td></tr>
+          <tr><td>Grade Profile Maximum</td><td>salary_max</td><td></td></tr>
+          <tr><td><em>Any other header</em></td><td>attributes</td><td>Stored as key-value pairs</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </details>
 </div>
 
 <div id="results-section">

@@ -185,3 +185,8 @@ podman run --rm \
 51. From Projects screen, allow sort by "Project ID"
 52. From Staffing page, allow delete of each month entry
 53. When deleting a Project, also remove from staffing entries
+54. Update the Upload CSV screen to display information on the CSV header schema from CLAUDE.md
+55. Update the Projects Import from CSV screen to display information on the CSV header schema from CLAUDE.md for Project
+56. On the Upload Employee CSV screen, ensure that the CSV schema reference fits with the import section and does not overflow
+57. On the Upload Employee CSV screen, ensure that the CSV schema wraps the Notes column and displays the full text
+58. On the Upload Employee CSV screen, ensure that the CSV schema reference fits with the import section and does not overflow (follow-up fix)
