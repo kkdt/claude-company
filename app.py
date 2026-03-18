@@ -462,7 +462,7 @@ def projects_edit(project_id):
         return redirect(url_for("projects"))
     project["project_description"] = request.form.get("project_description", "").strip()
     project["project_color"] = request.form.get("project_color", "").strip()
-    project["active"] = request.form.get("active") == "1"
+    project["active"] = "1" in request.form.getlist("active")
     keys = request.form.getlist("attr_key")
     values = request.form.getlist("attr_value")
     project["attributes"] = [{"key": k.strip(), "value": v.strip()} for k, v in zip(keys, values) if k.strip()]
