@@ -92,7 +92,7 @@ podman run --rm \
 
 ## Claude Instruction History
 
-> Claude command: show instruction history
+> Claude command: show claude instruction history
 
 ### Phase 1 - Training Claude and basic app functionality
 
@@ -163,4 +163,10 @@ podman run --rm \
 29. Allow editing a Project — Added POST /projects/<id>/edit route; edit form below detail view in project_detail.html.
 30. Hide inactive project assignments in Staffing Projections — Route builds active_proj_ids set and skips inactive projects when building month_assignments.
 31. Allow editing of past months in Staffing screens — Removed past-month save guard in route; removed read-only notice, always show Save button, enabled all checkboxes in staffing_month.html.
-32. On Staffing Projections screen, add filter by month range and allow past months                                                                                                                              
+32. On Staffing Projections screen, add filter by month range and allow past months
+33. On Staffing screens, if an employee_id cannot be found, still display the row but put emphasis that the employee does not exist
+34. On Staffing Projections, set the default to-month filter to next month
+35. From Staffing screens, add ability to delete ghost or missing employees
+36. For Staffing screens, include employee_name with staffing assignments
+37. On Staffing Projections, move the Project filter up above the Supervisory Org drop down filter 
+38. On Staffing Projections, add a text field that does a fuzzy search on employee_name and filters the results
