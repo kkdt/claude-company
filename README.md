@@ -190,3 +190,11 @@ podman run --rm \
 56. On the Upload Employee CSV screen, ensure that the CSV schema reference fits with the import section and does not overflow
 57. On the Upload Employee CSV screen, ensure that the CSV schema wraps the Notes column and displays the full text
 58. On the Upload Employee CSV screen, ensure that the CSV schema reference fits with the import section and does not overflow (follow-up fix)
+59. Fix Projects screen "Project ID" column not sorting
+60. On Staffing page, label the months "YYYY-MM"
+61. Add assignment filters to Staffing Projections — Added "Has Assignments" and "No Assignments" toggle buttons to the employee filter bar, wired into applyFilters().
+62. Remove the "Assignments" label — Removed the label, kept the two filter buttons; fixed a duplicate style attribute introduced in the process.
+63. Add "Export to CSV" — Added button to the toolbar exporting: Employee ID, Employee Name, Supervisor Organization, Job Profile, and one column per month. Exported only visible (filtered) rows.
+64. Change CSV to one row per assignment — Switched to flat format: Employee ID, Employee Name, Supervisor Organization, Job Profile, Month, Project — one row per assignment, employees with multiple projects in a month get multiple rows.
+65. Revert to months-as-headers format — Switched back to month columns; employees with no assignment get an empty cell; multiple projects in a month joined with ; in one cell.
+66. Duplicate rows for multiple assignments, months as headers — Each month remains a column header; if an employee has N projects in their busiest month, they get N rows — row i shows projects[i] for each month, empty if that month has fewer than i+1 assignments.

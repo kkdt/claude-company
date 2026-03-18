@@ -102,7 +102,7 @@
   {% set is_past = (year < today_year) or (year == today_year and month < today_month) %}
   <div class="month-row {% if is_current %}is-current{% elif is_past %}is-past{% else %}is-future{% endif %}">
     <div>
-      <span class="month-label">{{ MONTHS[month-1] }} {{ year }}</span>
+      <span class="month-label">{{ year }}-{{ '%02d'|format(month) }}</span>
       &nbsp;
       {% if is_current %}
         <span class="month-badge badge-current">Current</span>
@@ -115,7 +115,7 @@
     <div style="display:flex;gap:0.5rem;align-items:center;">
       <a class="btn-open" href="{{ url_for('staffing_month', year=year, month=month) }}">View</a>
       <form method="post" action="{{ url_for('staffing_month_delete', year=year, month=month) }}"
-            onsubmit="return confirm('Delete staffing for {{ MONTHS[month-1] }} {{ year }}? This cannot be undone.');"
+            onsubmit="return confirm('Delete staffing for {{ year }}-{{ '%02d'|format(month) }}? This cannot be undone.');"
             style="margin:0;">
         <button type="submit" class="btn-danger">Delete</button>
       </form>

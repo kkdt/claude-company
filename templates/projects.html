@@ -193,7 +193,7 @@
 <script>
   let sortAsc = true;
   function sortByProjectId() {
-    const tbody = document.querySelector('tbody');
+    const tbody = document.querySelector('.table-wrap tbody');
     const rows = Array.from(tbody.querySelectorAll('tr'));
     rows.sort((a, b) => {
       const aVal = a.cells[1].textContent.trim().toLowerCase();

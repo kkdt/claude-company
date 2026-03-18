@@ -156,6 +156,8 @@ const PROJ_META = {
   {% endfor %}
 };
 
+const MONTHS_LIST = [{% for yr, mo in months %}"{{ yr }}-{{ '%02d'|format(mo) }}"{% if not loop.last %},{% endif %}{% endfor %}];
+
 function projTagStyle(pid) {
   const color = (PROJ_META[pid] || {}).color;
   if (!color) return '';
@@ -176,7 +178,15 @@ function projTagStyle(pid) {
 
 <div class="toolbar">
   <h2>Projections</h2>
-  <span style="font-size:0.9rem;color:#666;">{{ months|length }} month(s) &nbsp;·&nbsp; {{ employees|length }} employee(s)</span>
+  <div style="display:flex;align-items:center;gap:1rem;">
+    <span style="font-size:0.9rem;color:#666;">{{ months|length }} month(s) &nbsp;·&nbsp; {{ employees|length }} employee(s)</span>
+    {% if employees %}
+    <button type="button" onclick="exportCSV()"
+      style="padding:0.35rem 0.9rem;font-size:0.875rem;background:#1a3a5c;color:#fff;border:none;border-radius:4px;cursor:pointer;">
+      Export to CSV
+    </button>
+    {% endif %}
+  </div>
 </div>
 
 {% if not employees %}
@@ -248,6 +258,14 @@ function projTagStyle(pid) {
     <option value="{{ org }}">{{ org }}</option>
     {% endfor %}
   </select>
+  <button type="button" id="filter-with-assignments" onclick="toggleAssignmentFilter('with')"
+    style="margin-left:0.5rem;padding:0.25rem 0.75rem;border-radius:999px;border:2px solid transparent;font-size:0.78rem;font-weight:600;cursor:pointer;background:#e6f4ea;color:#1b5e20;transition:box-shadow .15s;">
+    Has Assignments
+  </button>
+  <button type="button" id="filter-without-assignments" onclick="toggleAssignmentFilter('without')"
+    style="padding:0.25rem 0.75rem;border-radius:999px;border:2px solid transparent;font-size:0.78rem;font-weight:600;cursor:pointer;background:#fdecea;color:#b71c1c;transition:box-shadow .15s;">
+    No Assignments
+  </button>
   <span class="filter-count" id="filter-count"></span>
 </div>
 
@@ -272,7 +290,7 @@ function projTagStyle(pid) {
       {% set missing = emp._missing is defined and emp._missing %}
       {% set all_projs = [] %}
       {% for yr, mo in months %}{% for pid in month_assignments.get((yr, mo), {}).get(eid, []) %}{% if pid not in all_projs %}{% set _ = all_projs.append(pid) %}{% endif %}{% endfor %}{% endfor %}
-      <tr data-org="{{ emp.supervisor_organization or '' }}" data-projects="{{ all_projs | join(',') }}" {% if missing %}class="emp-missing"{% endif %}>
+      <tr data-eid="{{ eid }}" data-org="{{ emp.supervisor_organization or '' }}" data-projects="{{ all_projs | join(',') }}" {% if missing %}class="emp-missing"{% endif %}>
         <td>
           <div class="emp-name">
             {% if missing %}
@@ -394,6 +412,19 @@ function projTagStyle(pid) {
     return true;
   }
 
+  let assignmentFilter = null; // 'with' | 'without' | null
+
+  function toggleAssignmentFilter(type) {
+    assignmentFilter = assignmentFilter === type ? null : type;
+    const withBtn = document.getElementById('filter-with-assignments');
+    const withoutBtn = document.getElementById('filter-without-assignments');
+    withBtn.style.border = assignmentFilter === 'with' ? '2px solid rgba(0,0,0,.4)' : '2px solid transparent';
+    withBtn.style.boxShadow = assignmentFilter === 'with' ? '0 0 0 2px rgba(0,0,0,.15)' : '';
+    withoutBtn.style.border = assignmentFilter === 'without' ? '2px solid rgba(0,0,0,.4)' : '2px solid transparent';
+    withoutBtn.style.boxShadow = assignmentFilter === 'without' ? '0 0 0 2px rgba(0,0,0,.15)' : '';
+    applyFilters();
+  }
+
   function applyFilters() {
     const org = document.getElementById('org-filter').value;
     const search = document.getElementById('emp-search').value.trim();
@@ -406,12 +437,16 @@ function projTagStyle(pid) {
       const nameEl = row.querySelector('.emp-name');
       const nameText = nameEl ? nameEl.textContent.trim() : '';
       const nameMatch = fuzzyMatch(nameText, search);
-      const show = orgMatch && projMatch && nameMatch;
+      const hasAssignments = rowProjs.size > 0;
+      const assignmentMatch = !assignmentFilter ||
+        (assignmentFilter === 'with' && hasAssignments) ||
+        (assignmentFilter === 'without' && !hasAssignments);
+      const show = orgMatch && projMatch && nameMatch && assignmentMatch;
       row.style.display = show ? '' : 'none';
       if (show) visible++;
     });
     const count = document.getElementById('filter-count');
-    const anyFilter = org || activeProjects.size > 0 || search;
+    const anyFilter = org || activeProjects.size > 0 || search || assignmentFilter;
     count.textContent = anyFilter ? `${visible} of ${rows.length} employee(s)` : '';
   }
 
@@ -474,6 +509,30 @@ function projTagStyle(pid) {
 
   function escListener(e) {
     if (e.key === 'Escape') closeModal();
+  }
+
+  function exportCSV() {
+    const headers = ['Employee ID', 'Employee Name', 'Supervisor Organization', 'Job Profile', ...MONTHS_LIST];
+    const rows = [headers];
+    document.querySelectorAll('tbody tr').forEach(row => {
+      if (row.style.display === 'none') return;
+      const eid = row.dataset.eid;
+      const emp = EMPLOYEE_DATA[eid];
+      if (!emp) return;
+      const maxSlots = Math.max(1, ...emp.months.map(m => m.projects.length));
+      for (let i = 0; i < maxSlots; i++) {
+        const monthCols = emp.months.map(m => m.projects[i] || '');
+        rows.push([eid, emp.name, emp.supervisor_organization || '', emp.job_profile || '', ...monthCols]);
+      }
+    });
+    const csv = rows.map(r => r.map(v => '"' + String(v).replace(/"/g, '""') + '"').join(',')).join('\r\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'staffing_projections.csv';
+    a.click();
+    URL.revokeObjectURL(url);
   }
 </script>
 {% endblock %}
