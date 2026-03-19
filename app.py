@@ -483,6 +483,12 @@ def projects_delete(project_id):
     return redirect(url_for("projects"))
 
 
+@app.route("/public/projects")
+def public_projects():
+    all_projects = load_projects()
+    return render_template("public_projects.html", projects=all_projects)
+
+
 @app.route("/staffing")
 def staffing():
     from datetime import date

@@ -1,0 +1,239 @@
+{% extends "base.html" %}
+{% block content %}
+<style>
+  .subnav { display: flex; border-bottom: 2px solid #dde; margin-bottom: 1.5rem; }
+  .subnav a {
+    padding: 0.55rem 1.25rem; font-size: 0.9rem; color: #555; text-decoration: none;
+    border-bottom: 3px solid transparent; margin-bottom: -2px;
+  }
+  .subnav a:hover { color: #1a3a5c; }
+  .subnav a.active { color: #1a3a5c; font-weight: 600; border-bottom-color: #1a3a5c; }
+
+  .toolbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.25rem; }
+  .toolbar h2 { font-size: 1.2rem; }
+
+  .table-wrap { overflow-x: auto; background: #fff; border-radius: 8px; box-shadow: 0 1px 4px rgba(0,0,0,.1); }
+  table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
+  thead tr { background: #1a3a5c; color: #fff; }
+  thead th { padding: 0.7rem 1rem; text-align: left; white-space: nowrap; font-weight: 600; }
+  th.sortable { cursor: pointer; user-select: none; }
+  th.sortable:hover { background: #255480; }
+  th.sortable .sort-indicator { margin-left: 0.3rem; opacity: 0.6; font-size: 0.75rem; }
+  tbody tr:nth-child(even) { background: #f8fafc; }
+  tbody tr { cursor: pointer; }
+  tbody tr:hover { background: #eef3f9; }
+  tbody td { padding: 0.6rem 1rem; border-bottom: 1px solid #e8ecf0; vertical-align: middle; }
+  .empty { text-align: center; padding: 3rem; color: #888; }
+
+  /* Modal */
+  .modal-backdrop {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,.45); z-index: 100;
+    align-items: center; justify-content: center;
+  }
+  .modal-backdrop.open { display: flex; }
+  .modal {
+    background: #fff; border-radius: 8px; box-shadow: 0 4px 24px rgba(0,0,0,.2);
+    width: 100%; max-width: 540px; overflow: hidden;
+  }
+  .modal-header {
+    background: #1a3a5c; color: #fff; padding: 1rem 1.5rem;
+    display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+  }
+  .modal-header h2 { font-size: 1.1rem; font-weight: 600; }
+  .modal-close {
+    background: none; border: none; color: #fff; font-size: 1.3rem;
+    cursor: pointer; line-height: 1; padding: 0; opacity: 0.8;
+  }
+  .modal-close:hover { opacity: 1; }
+  .modal-body { padding: 1.25rem 1.5rem; }
+  .field-row { display: flex; gap: 0; border-bottom: 1px solid #eef; }
+  .field-row:last-child { border-bottom: none; }
+  .field-label {
+    width: 140px; flex-shrink: 0; padding: 0.6rem 0.75rem 0.6rem 0;
+    font-size: 0.78rem; font-weight: 700; color: #555; text-transform: uppercase; letter-spacing: 0.04em;
+  }
+  .field-value { padding: 0.6rem 0; font-size: 0.9rem; color: #222; }
+  .field-value.empty { color: #aaa; font-style: italic; }
+  .section-title {
+    font-size: 0.78rem; font-weight: 700; color: #1a3a5c; text-transform: uppercase;
+    letter-spacing: 0.05em; margin: 1.25rem 0 0.65rem;
+  }
+  .attrs-table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
+  .attrs-table thead tr { background: #f0f4f8; }
+  .attrs-table thead th { padding: 0.45rem 0.75rem; text-align: left; color: #444; font-weight: 600; border-bottom: 2px solid #dde; }
+  .attrs-table tbody td { padding: 0.45rem 0.75rem; border-bottom: 1px solid #eef; }
+  .attrs-table tbody tr:last-child td { border-bottom: none; }
+  .no-attrs { font-size: 0.875rem; color: #aaa; font-style: italic; }
+</style>
+
+<div class="subnav">
+  <a href="{{ url_for('public_projects') }}" class="active">Projects</a>
+</div>
+
+<div class="toolbar">
+  <h2>Projects</h2>
+  <span style="font-size:0.9rem;color:#666;">{{ projects|length }} project(s)</span>
+</div>
+
+{% if projects %}
+<div class="table-wrap">
+  <table>
+    <thead>
+      <tr>
+        <th></th>
+        <th class="sortable" onclick="sortByProjectId()">Project ID <span class="sort-indicator" id="sort-indicator">▲</span></th>
+        <th>Description</th>
+        <th>Active</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for project in projects %}
+      <tr onclick="openModal({{ loop.index0 }})">
+        <td style="width:32px;padding-right:0;">
+          {% if project.project_color %}
+          <span style="display:inline-block;width:16px;height:16px;border-radius:50%;background:{{ project.project_color }};border:1px solid rgba(0,0,0,.15);vertical-align:middle;"></span>
+          {% endif %}
+        </td>
+        <td>{{ project.project_id }}</td>
+        <td>{{ project.project_description or '—' }}</td>
+        <td>
+          {% if project.active %}
+          <span style="color:#2e7d4f;font-weight:600;font-size:0.85rem;">&#10003; Yes</span>
+          {% else %}
+          <span style="color:#aaa;font-size:0.85rem;">No</span>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<div class="empty">No projects available.</div>
+{% endif %}
+
+<!-- Modal -->
+<div class="modal-backdrop" id="modal-backdrop" onclick="closeOnBackdrop(event)">
+  <div class="modal">
+    <div class="modal-header" id="modal-header">
+      <h2 id="modal-title"></h2>
+      <button class="modal-close" onclick="closeModal()" title="Close">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div class="field-row">
+        <div class="field-label">Project ID</div>
+        <div class="field-value" id="modal-id"></div>
+      </div>
+      <div class="field-row">
+        <div class="field-label">Color</div>
+        <div class="field-value" id="modal-color"></div>
+      </div>
+      <div class="field-row">
+        <div class="field-label">Active</div>
+        <div class="field-value" id="modal-active"></div>
+      </div>
+      <div class="field-row">
+        <div class="field-label">Description</div>
+        <div class="field-value" id="modal-description"></div>
+      </div>
+      <div id="modal-attrs-section">
+        <div class="section-title">Attributes</div>
+        <div id="modal-attrs"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const projects = {{ projects | tojson }};
+
+  let sortAsc = true;
+  function sortByProjectId() {
+    const tbody = document.querySelector('.table-wrap tbody');
+    const rows = Array.from(tbody.querySelectorAll('tr'));
+    rows.sort((a, b) => {
+      const aVal = a.cells[1].textContent.trim().toLowerCase();
+      const bVal = b.cells[1].textContent.trim().toLowerCase();
+      return sortAsc ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
+    });
+    sortAsc = !sortAsc;
+    document.getElementById('sort-indicator').textContent = sortAsc ? '▲' : '▼';
+    rows.forEach(r => tbody.appendChild(r));
+  }
+
+  function openModal(index) {
+    const p = projects[index];
+
+    const header = document.getElementById('modal-header');
+    header.style.background = p.project_color || '#1a3a5c';
+
+    document.getElementById('modal-title').textContent = p.project_id;
+    document.getElementById('modal-id').textContent = p.project_id;
+
+    const colorEl = document.getElementById('modal-color');
+    if (p.project_color) {
+      colorEl.innerHTML =
+        '<span style="display:inline-flex;align-items:center;gap:0.5rem;">' +
+        '<span style="display:inline-block;width:16px;height:16px;border-radius:50%;background:' + p.project_color + ';border:1px solid rgba(0,0,0,.15);"></span>' +
+        p.project_color + '</span>';
+      colorEl.className = 'field-value';
+    } else {
+      colorEl.textContent = 'No color set';
+      colorEl.className = 'field-value empty';
+    }
+
+    const activeEl = document.getElementById('modal-active');
+    if (p.active) {
+      activeEl.innerHTML = '<span style="color:#2e7d4f;font-weight:600;">&#10003; Yes</span>';
+    } else {
+      activeEl.innerHTML = '<span style="color:#aaa;">No</span>';
+    }
+
+    const descEl = document.getElementById('modal-description');
+    if (p.project_description) {
+      descEl.textContent = p.project_description;
+      descEl.className = 'field-value';
+    } else {
+      descEl.textContent = 'No description';
+      descEl.className = 'field-value empty';
+    }
+
+    const attrsEl = document.getElementById('modal-attrs');
+    if (p.attributes && p.attributes.length) {
+      let html = '<table class="attrs-table"><thead><tr><th>Name</th><th>Value</th></tr></thead><tbody>';
+      p.attributes.forEach(a => {
+        html += '<tr><td>' + escHtml(a.key) + '</td><td>' + escHtml(a.value) + '</td></tr>';
+      });
+      html += '</tbody></table>';
+      attrsEl.innerHTML = html;
+    } else {
+      attrsEl.innerHTML = '<p class="no-attrs">No attributes defined.</p>';
+    }
+
+    document.getElementById('modal-backdrop').classList.add('open');
+    document.addEventListener('keydown', onEsc);
+  }
+
+  function closeModal() {
+    document.getElementById('modal-backdrop').classList.remove('open');
+    document.removeEventListener('keydown', onEsc);
+  }
+
+  function closeOnBackdrop(e) {
+    if (e.target === document.getElementById('modal-backdrop')) closeModal();
+  }
+
+  function onEsc(e) {
+    if (e.key === 'Escape') closeModal();
+  }
+
+  function escHtml(str) {
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+</script>
+{% endblock %}
