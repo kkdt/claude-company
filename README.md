@@ -199,3 +199,4 @@ podman run --rm \
 65. Revert to months-as-headers format — Switched back to month columns; employees with no assignment get an empty cell; multiple projects in a month joined with ; in one cell.
 66. Duplicate rows for multiple assignments, months as headers — Each month remains a column header; if an employee has N projects in their busiest month, they get N rows — row i shows projects[i] for each month, empty if that month has fewer than i+1 assignments.
 67. Add color filter buttons to Staffing Projections — Added a Color filter bar below the Project filter bar, one button per unique color among active projects. Buttons are color-styled with auto-contrasted text and a tooltip listing project IDs. Color filter stacks with all other filters; includes a Clear button.
+68. Restrict color filter to active projects only — Added active field to PROJ_META and filtered the color bar builder to skip inactive projects.

@@ -151,7 +151,8 @@ const PROJ_META = {
   {% for pid, proj in proj_map.items() %}
   {{ pid | tojson }}: {
     "description": {{ (proj.project_description or '') | tojson }},
-    "color": {{ (proj.project_color or '') | tojson }}
+    "color": {{ (proj.project_color or '') | tojson }},
+    "active": {{ (proj.active and true) | tojson }}
   }{% if not loop.last %},{% endif %}
   {% endfor %}
 };
@@ -391,7 +392,7 @@ function projTagStyle(pid) {
   (function() {
     const colorMap = {}; // color -> [pid, ...]
     Object.entries(PROJ_META).forEach(([pid, meta]) => {
-      if (meta.color) {
+      if (meta.color && meta.active) {
         if (!colorMap[meta.color]) colorMap[meta.color] = [];
         colorMap[meta.color].push(pid);
       }
