@@ -489,6 +489,75 @@ def public_projects():
     return render_template("public_projects.html", projects=all_projects)
 
 
+@app.route("/public/staffing-projections")
+def public_staffing_projections():
+    from datetime import date
+    today = date.today()
+    records = load_staffing()
+    employees = load_employees()
+    all_projects = load_projects()
+    proj_map = {p["project_id"]: p for p in all_projects}
+    active_proj_ids = {p["project_id"] for p in all_projects if p.get("active", True)}
+
+    all_record_months = sorted({(r["year"], r["month"]) for r in records})
+    if today.month == 12:
+        default_to_year, default_to_month = today.year + 1, 1
+    else:
+        default_to_year, default_to_month = today.year, today.month + 1
+    try:
+        from_year = int(request.args.get("from_year", today.year))
+        from_month = int(request.args.get("from_month", today.month))
+        to_year = int(request.args.get("to_year", default_to_year))
+        to_month = int(request.args.get("to_month", default_to_month))
+    except (ValueError, TypeError):
+        from_year, from_month = today.year, today.month
+        to_year, to_month = default_to_year, default_to_month
+
+    filtered = sorted(
+        [r for r in records if (from_year, from_month) <= (r["year"], r["month"]) <= (to_year, to_month)],
+        key=lambda r: (r["year"], r["month"])
+    )
+
+    month_assignments = {}
+    for r in filtered:
+        key = (r["year"], r["month"])
+        emp_proj = {}
+        for a in r["assignments"]:
+            if a["project_id"] in active_proj_ids:
+                emp_proj.setdefault(a["employee_id"], []).append(a["project_id"])
+        month_assignments[key] = emp_proj
+
+    months = [(r["year"], r["month"]) for r in filtered]
+    all_record_months = sorted({(r["year"], r["month"]) for r in records})
+
+    known_ids = {e["employee_id"] for e in employees}
+    ghost_ids = set()
+    for emp_proj in month_assignments.values():
+        for eid in emp_proj:
+            if eid not in known_ids:
+                ghost_ids.add(eid)
+    ghost_employees = [{"employee_id": eid, "employee_name": eid,
+                        "job_profile": "", "supervisor_organization": "", "location": "",
+                        "_missing": True}
+                       for eid in sorted(ghost_ids)]
+    employees_all = employees + ghost_employees
+
+    return render_template(
+        "public_staffing_projections.html",
+        months=months,
+        employees=employees_all,
+        proj_map=proj_map,
+        month_assignments=month_assignments,
+        today_year=today.year,
+        today_month=today.month,
+        from_year=from_year,
+        from_month=from_month,
+        to_year=to_year,
+        to_month=to_month,
+        all_record_months=all_record_months,
+    )
+
+
 @app.route("/public/organization")
 def public_organization():
     all_employees = load_employees()
