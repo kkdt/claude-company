@@ -489,6 +489,20 @@ def public_projects():
     return render_template("public_projects.html", projects=all_projects)
 
 
+@app.route("/public/organization")
+def public_organization():
+    all_employees = load_employees()
+    # Strip compensation fields before exposing publicly
+    SALARY_FIELDS = ("annual_salary", "hourly_rate", "salary_min", "salary_mid", "salary_max")
+    public_employees = [
+        {k: v for k, v in emp.items() if k not in SALARY_FIELDS}
+        for emp in all_employees
+    ]
+    roots, children_map = build_org_tree(public_employees)
+    emp_map = {e["employee_id"]: e for e in public_employees}
+    return render_template("public_organization.html", roots=roots, children_map=children_map, emp_map=emp_map)
+
+
 @app.route("/staffing")
 def staffing():
     from datetime import date

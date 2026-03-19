@@ -1,0 +1,217 @@
+{% extends "base.html" %}
+{% block content %}
+{% macro render_node(emp, depth) %}
+{% set children = children_map.get(emp.employee_id, []) %}
+<li class="node-item" data-emp-id="{{ emp.employee_id }}" data-emp-name="{{ emp.employee_name | e }}">
+  <div class="emp-card {% if children %}has-children{% endif %}">
+    <div class="emp-card-header" {% if children %}onclick="toggleNode(this)"{% endif %}>
+      {% if children %}<span class="toggle">&#9654;</span>{% else %}<span class="toggle leaf">&#9679;</span>{% endif %}
+      <div class="emp-card-info">
+        <span class="emp-name">{{ emp.employee_name }}</span>
+        <span class="emp-meta">{{ emp.employee_id }} &mdash; {{ emp.job_profile }}</span>
+        {% if emp.location %}<span class="emp-meta">{{ emp.location }}</span>{% endif %}
+      </div>
+      {% if children %}
+      <span class="report-badge">{{ children|length }} direct report{{ 's' if children|length != 1 }}</span>
+      {% endif %}
+    </div>
+    <ul class="children-list" {% if not children %}style="display:none"{% endif %}>
+      {% for child in children %}
+        {{ render_node(child, depth + 1) }}
+      {% endfor %}
+    </ul>
+  </div>
+</li>
+{% endmacro %}
+
+<style>
+  .subnav { display: flex; border-bottom: 2px solid #dde; margin-bottom: 1.5rem; }
+  .subnav a {
+    padding: 0.55rem 1.25rem; font-size: 0.9rem; color: #555; text-decoration: none;
+    border-bottom: 3px solid transparent; margin-bottom: -2px;
+  }
+  .subnav a:hover { color: #1a3a5c; }
+  .subnav a.active { color: #1a3a5c; font-weight: 600; border-bottom-color: #1a3a5c; }
+
+  .toolbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.25rem; flex-wrap: wrap; gap: 0.5rem; }
+  .toolbar h2 { font-size: 1.2rem; }
+  .controls { margin-bottom: 1rem; display: flex; gap: 0.5rem; align-items: center; }
+  .controls button {
+    font-size: 0.8rem; padding: 0.3rem 0.8rem; border: 1px solid #bcd;
+    border-radius: 4px; background: #fff; cursor: pointer; color: #1a3a5c;
+  }
+  .controls button:hover { background: #eef3f9; }
+
+  .tree-root { list-style: none; }
+  .node-item { margin: 0.4rem 0; }
+  .children-list { list-style: none; padding-left: 2rem; border-left: 2px solid #d0dce8; margin-left: 1rem; margin-top: 0.4rem; }
+
+  .emp-card {
+    background: #fff; border-radius: 6px; box-shadow: 0 1px 3px rgba(0,0,0,.08);
+    border: 1px solid #e4eaf0;
+  }
+  .emp-card-header {
+    display: flex; align-items: center; gap: 0.75rem; padding: 0.6rem 0.9rem;
+  }
+  .emp-card.has-children > .emp-card-header { cursor: pointer; }
+  .emp-card.has-children > .emp-card-header:hover { background: #f0f5fa; border-radius: 6px; }
+
+  .toggle { font-size: 0.7rem; width: 1rem; color: #1a3a5c; transition: transform 0.15s; flex-shrink: 0; }
+  .toggle.leaf { font-size: 0.5rem; color: #bbb; }
+  .emp-card-info { flex: 1; min-width: 0; }
+  .emp-name { display: block; font-weight: 600; font-size: 0.9rem; color: #222; }
+  .emp-meta { font-size: 0.78rem; color: #777; margin-right: 0.75rem; }
+  .report-badge {
+    font-size: 0.75rem; background: #e8f0f8; color: #1a3a5c;
+    border-radius: 10px; padding: 0.15rem 0.6rem; white-space: nowrap; flex-shrink: 0;
+  }
+  .empty { text-align: center; padding: 3rem; color: #888; }
+  .empty a { color: #1a3a5c; }
+
+  /* Render modal */
+  .render-backdrop {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,.55); z-index: 200; align-items: center; justify-content: center;
+  }
+  .render-backdrop.open { display: flex; }
+  .render-modal {
+    background: #1a1a1a; color: #d4d4d4; border-radius: 8px;
+    box-shadow: 0 8px 32px rgba(0,0,0,.5);
+    width: 760px; max-width: 95vw; max-height: 85vh;
+    display: flex; flex-direction: column; overflow: hidden;
+  }
+  .render-modal-header {
+    background: #111; padding: 0.75rem 1.25rem;
+    display: flex; align-items: center; justify-content: space-between;
+    border-bottom: 1px solid #333; flex-shrink: 0;
+  }
+  .render-modal-header span { font-size: 0.85rem; color: #888; font-family: monospace; }
+  .render-close {
+    background: none; border: none; color: #888; font-size: 1.1rem;
+    cursor: pointer; line-height: 1; padding: 0 0.25rem;
+  }
+  .render-close:hover { color: #fff; }
+  .render-body { overflow-y: auto; padding: 1.25rem 1.5rem; flex: 1; }
+  .render-body pre {
+    font-family: 'Courier New', Courier, monospace; font-size: 0.82rem;
+    line-height: 1.55; white-space: pre; margin: 0; color: #d4d4d4;
+  }
+  .render-body pre .node-name { color: #9cdcfe; }
+  .render-body pre .node-meta { color: #6a9955; }
+  .btn-render {
+    padding: 0.35rem 0.9rem; font-size: 0.85rem; background: #444; color: #fff;
+    border: 1px solid #666; border-radius: 4px; cursor: pointer; white-space: nowrap;
+  }
+  .btn-render:hover { background: #555; }
+</style>
+
+<div class="subnav">
+  <a href="{{ url_for('public_projects') }}">Projects</a>
+  <a href="{{ url_for('public_organization') }}" class="active">Organization</a>
+</div>
+
+<div class="toolbar">
+  <h2>Organization</h2>
+  <div style="display:flex;align-items:center;gap:0.75rem;">
+    <span style="font-size:0.9rem;color:#666;">{{ emp_map|length }} employee(s)</span>
+    {% if roots %}<button class="btn-render" onclick="openRender()">Render</button>{% endif %}
+  </div>
+</div>
+
+{% if roots %}
+<div class="controls">
+  <button onclick="expandAll()">Expand All</button>
+  <button onclick="collapseAll()">Collapse All</button>
+</div>
+
+<ul class="tree-root" id="tree-root">
+  {% for emp in roots %}
+    {{ render_node(emp, 0) }}
+  {% endfor %}
+</ul>
+
+<script>
+  function toggleNode(header) {
+    const list = header.nextElementSibling;
+    const toggle = header.querySelector('.toggle');
+    const open = list && list.style.display !== 'none';
+    if (list) list.style.display = open ? 'none' : '';
+    if (toggle) toggle.style.transform = open ? '' : 'rotate(90deg)';
+  }
+  function expandAll() {
+    document.querySelectorAll('.children-list').forEach(l => l.style.display = '');
+    document.querySelectorAll('.emp-card.has-children .toggle').forEach(t => t.style.transform = 'rotate(90deg)');
+  }
+  function collapseAll() {
+    document.querySelectorAll('.children-list').forEach(l => l.style.display = 'none');
+    document.querySelectorAll('.emp-card.has-children .toggle').forEach(t => t.style.transform = '');
+  }
+</script>
+
+<!-- Render modal -->
+<div class="render-backdrop" id="render-backdrop" onclick="closeRenderOnBackdrop(event)">
+  <div class="render-modal">
+    <div class="render-modal-header">
+      <span>org chart — terminal tree</span>
+      <button class="render-close" onclick="closeRender()" aria-label="Close">&#x2715;</button>
+    </div>
+    <div class="render-body">
+      <pre id="render-output"></pre>
+    </div>
+  </div>
+</div>
+
+<script>
+  function buildTreeData(li) {
+    const empId   = li.dataset.empId;
+    const empName = li.dataset.empName;
+    const metas   = li.querySelectorAll(':scope > .emp-card > .emp-card-header .emp-meta');
+    const meta    = metas.length ? metas[0].textContent.trim() : '';
+    const childList = li.querySelector(':scope > .emp-card > .children-list');
+    const children  = childList
+      ? Array.from(childList.querySelectorAll(':scope > .node-item')).map(buildTreeData)
+      : [];
+    return { empId, empName, meta, children };
+  }
+
+  function renderTreeHTML(nodes, prefix) {
+    let out = '';
+    nodes.forEach((node, i) => {
+      const last      = i === nodes.length - 1;
+      const connector = last ? '└── ' : '├── ';
+      const childPfx  = last ? '    ' : '│   ';
+      const nameHtml  = `<span class="node-name">${esc(node.empName)}</span>`;
+      const metaHtml  = node.meta ? `  <span class="node-meta">${esc(node.meta)}</span>` : '';
+      out += esc(prefix) + connector + nameHtml + metaHtml + '\n';
+      if (node.children.length) out += renderTreeHTML(node.children, prefix + childPfx);
+    });
+    return out;
+  }
+
+  function esc(s) {
+    return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  function openRender() {
+    const rootItems = Array.from(document.querySelectorAll('#tree-root > .node-item'));
+    const html = renderTreeHTML(rootItems.map(buildTreeData), '');
+    document.getElementById('render-output').innerHTML = html;
+    document.getElementById('render-backdrop').classList.add('open');
+    document.addEventListener('keydown', renderEscListener);
+  }
+  function closeRender() {
+    document.getElementById('render-backdrop').classList.remove('open');
+    document.removeEventListener('keydown', renderEscListener);
+  }
+  function closeRenderOnBackdrop(e) {
+    if (e.target === document.getElementById('render-backdrop')) closeRender();
+  }
+  function renderEscListener(e) { if (e.key === 'Escape') closeRender(); }
+</script>
+
+{% else %}
+<div class="empty">
+  No employees loaded. <a href="{{ url_for('upload') }}">Upload a CSV file</a> to get started.
+</div>
+{% endif %}
+{% endblock %}
