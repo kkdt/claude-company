@@ -3,10 +3,23 @@ import json
 import io
 import os
 import re
-from flask import Flask, request, redirect, url_for, render_template, flash, Response, jsonify
+from flask import Flask, request, redirect, url_for, render_template, flash, Response, jsonify, session
 
 app = Flask(__name__)
 app.secret_key = "workforce-secret"
+
+CHALLENGE_WORD = os.environ.get("CHALLENGE_WORD", "")
+
+PUBLIC_ENDPOINTS = {
+    "public_projects", "public_organization", "public_staffing_projections",
+    "login", "logout", "static",
+}
+
+@app.before_request
+def require_login():
+    if request.endpoint and request.endpoint not in PUBLIC_ENDPOINTS:
+        if not session.get("logged_in"):
+            return redirect(url_for("login", next=request.path))
 
 DB_PATH = os.path.join(os.path.dirname(__file__), "data", "employees.json")
 PROJECTS_PATH = os.path.join(os.path.dirname(__file__), "data", "projects.json")
@@ -485,12 +498,36 @@ def projects_delete(project_id):
 
 @app.route("/public/projects")
 def public_projects():
+    if session.get("logged_in"):
+        return redirect(url_for("projects"))
     all_projects = load_projects()
     return render_template("public_projects.html", projects=all_projects)
 
 
+@app.route("/login", methods=["GET", "POST"])
+def login():
+    if session.get("logged_in"):
+        return redirect(url_for("upload"))
+    if request.method == "POST":
+        word = request.form.get("challenge_word", "").strip()
+        if CHALLENGE_WORD and word == CHALLENGE_WORD:
+            session["logged_in"] = True
+            next_url = request.form.get("next") or url_for("upload")
+            return redirect(next_url)
+        flash("Incorrect challenge word.")
+    return render_template("login.html", next=request.args.get("next", ""))
+
+
+@app.route("/logout", methods=["POST"])
+def logout():
+    session.clear()
+    return redirect(url_for("public_organization"))
+
+
 @app.route("/public/staffing-projections")
 def public_staffing_projections():
+    if session.get("logged_in"):
+        return redirect(url_for("staffing_projections"))
     from datetime import date
     today = date.today()
     records = load_staffing()
@@ -560,6 +597,8 @@ def public_staffing_projections():
 
 @app.route("/public/organization")
 def public_organization():
+    if session.get("logged_in"):
+        return redirect(url_for("organization"))
     all_employees = load_employees()
     # Strip compensation fields before exposing publicly
     SALARY_FIELDS = ("annual_salary", "hourly_rate", "salary_min", "salary_mid", "salary_max")

@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block content %}
+<style>
+  .login-wrap { display: flex; justify-content: center; padding-top: 4rem; }
+  .login-card {
+    background: #fff; border-radius: 8px; box-shadow: 0 2px 12px rgba(0,0,0,.12);
+    padding: 2rem 2.25rem; width: 100%; max-width: 360px;
+  }
+  .login-card h2 { font-size: 1.2rem; margin-bottom: 1.5rem; color: #1a3a5c; }
+  .form-group { display: flex; flex-direction: column; gap: 0.3rem; margin-bottom: 1.25rem; }
+  .form-group label { font-size: 0.8rem; font-weight: 700; color: #555; text-transform: uppercase; letter-spacing: 0.04em; }
+  .form-group input {
+    padding: 0.5rem 0.75rem; border: 1px solid #ccd; border-radius: 4px;
+    font-size: 0.9rem; background: #f9fafc;
+  }
+  .form-group input:focus { outline: none; border-color: #1a3a5c; background: #fff; }
+  .btn-submit {
+    width: 100%; padding: 0.55rem; font-size: 0.9rem; font-weight: 600;
+    background: #1a3a5c; color: #fff; border: none; border-radius: 4px; cursor: pointer;
+  }
+  .btn-submit:hover { background: #255480; }
+</style>
+
+<div class="login-wrap">
+  <div class="login-card">
+    <h2>Sign In</h2>
+    <form method="post" action="{{ url_for('login') }}">
+      <input type="hidden" name="next" value="{{ next }}">
+      <div class="form-group">
+        <label for="challenge_word">Challenge Word</label>
+        <input type="password" id="challenge_word" name="challenge_word"
+               autocomplete="current-password" required autofocus>
+      </div>
+      <button type="submit" class="btn-submit">Sign In</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

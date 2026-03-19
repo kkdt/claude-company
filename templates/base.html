@@ -26,6 +26,16 @@
       background: #2e7d4f; color: #fff; cursor: pointer; font-size: 0.875rem;
     }
     .search-form button:hover { background: #256040; }
+    .btn-logout {
+      padding: 0.3rem 0.9rem; font-size: 0.875rem; background: transparent; color: #cde;
+      border: 1px solid rgba(255,255,255,.35); border-radius: 4px; cursor: pointer; white-space: nowrap;
+    }
+    .btn-logout:hover { background: rgba(255,255,255,.1); color: #fff; }
+    .btn-login {
+      padding: 0.3rem 0.9rem; font-size: 0.875rem; background: transparent; color: #cde;
+      border: 1px solid rgba(255,255,255,.35); border-radius: 4px; text-decoration: none; white-space: nowrap;
+    }
+    .btn-login:hover { background: rgba(255,255,255,.1); color: #fff; text-decoration: none; }
     .container { max-width: 1200px; margin: 2rem auto; padding: 0 1.5rem; }
     .flash { padding: 0.75rem 1rem; border-radius: 4px; margin-bottom: 1.25rem; font-size: 0.9rem; }
     .flash.info { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
@@ -36,17 +46,28 @@
   <header>
     <h1>Company</h1>
     <nav>
+      {% if session.get('logged_in') %}
       <a href="{{ url_for('upload') }}">Upload CSV</a>
       <a href="{{ url_for('employees') }}">View Employees</a>
       <a href="{{ url_for('organization') }}">Organization</a>
       <a href="{{ url_for('projects') }}">Projects</a>
       <a href="{{ url_for('staffing') }}">Staffing</a>
-      <a href="{{ url_for('public_projects') }}">Public</a>
+      {% endif %}
+      {% if not session.get('logged_in') %}
+      <a href="{{ url_for('public_organization') }}">Public</a>
+      {% endif %}
     </nav>
+    {% if session.get('logged_in') %}
     <form class="search-form" action="{{ url_for('search') }}" method="get">
       <input type="search" name="q" placeholder="Search employees…" value="{{ request.args.get('q', '') }}">
       <button type="submit">Search</button>
     </form>
+    <form method="post" action="{{ url_for('logout') }}" style="margin-left:0.75rem;flex-shrink:0;">
+      <button type="submit" class="btn-logout">Logout</button>
+    </form>
+    {% else %}
+    <a href="{{ url_for('login') }}" class="btn-login" style="margin-left:auto;">Login</a>
+    {% endif %}
   </header>
   <div class="container">
     {% with messages = get_flashed_messages() %}
