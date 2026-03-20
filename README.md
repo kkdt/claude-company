@@ -237,3 +237,4 @@ podman run --rm \
 11. How to build a single-file executable on Windows — answered with PyInstaller + PowerShell instructions
 12. Create build.ps1 — Windows equivalent of build.sh with -Clean, Git tag versioning, .zip archive
 13. Generate build instructions — created BUILDING.md
+14. Change "All Orgs" label to "Select supervisor(s)" on the Employees page supervisory org filter
