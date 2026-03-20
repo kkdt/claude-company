@@ -273,6 +273,10 @@ function projTagStyle(pid) {
     style="padding:0.25rem 0.75rem;border-radius:999px;border:2px solid transparent;font-size:0.78rem;font-weight:600;cursor:pointer;background:#fdecea;color:#b71c1c;transition:box-shadow .15s;">
     No Assignments
   </button>
+  <button type="button" id="filter-unknown" onclick="toggleUnknownFilter()"
+    style="padding:0.25rem 0.75rem;border-radius:999px;border:2px solid transparent;font-size:0.78rem;font-weight:600;cursor:pointer;background:#fff8e1;color:#7a5800;transition:box-shadow .15s;">
+    Unknown Assignments
+  </button>
   <span class="filter-count" id="filter-count"></span>
 </div>
 
@@ -508,11 +512,22 @@ function projTagStyle(pid) {
     }
   });
 
+  let unknownFilter = false;
+
+  function toggleUnknownFilter() {
+    unknownFilter = !unknownFilter;
+    const btn = document.getElementById('filter-unknown');
+    btn.style.border = unknownFilter ? '2px solid rgba(0,0,0,.4)' : '2px solid transparent';
+    btn.style.boxShadow = unknownFilter ? '0 0 0 2px rgba(0,0,0,.15)' : '';
+    applyFilters();
+  }
+
   function applyFilters() {
     const search = document.getElementById('emp-search').value.trim();
     const rows = document.querySelectorAll('tbody tr');
     let visible = 0;
     rows.forEach(row => {
+      const isMissing = row.classList.contains('emp-missing');
       const orgMatch = selectedOrgs.size === 0 || selectedOrgs.has(row.dataset.org);
       const rowProjs = new Set((row.dataset.projects || '').split(',').filter(Boolean));
       const projMatch = activeProjects.size === 0 || [...activeProjects].some(pid => rowProjs.has(pid));
@@ -524,12 +539,13 @@ function projTagStyle(pid) {
       const assignmentMatch = !assignmentFilter ||
         (assignmentFilter === 'with' && hasAssignments) ||
         (assignmentFilter === 'without' && !hasAssignments);
-      const show = orgMatch && projMatch && colorMatch && nameMatch && assignmentMatch;
+      const unknownMatch = !unknownFilter || isMissing;
+      const show = orgMatch && projMatch && colorMatch && nameMatch && assignmentMatch && unknownMatch;
       row.style.display = show ? '' : 'none';
       if (show) visible++;
     });
     const count = document.getElementById('filter-count');
-    const anyFilter = selectedOrgs.size > 0 || activeProjects.size > 0 || activeColors.size > 0 || search || assignmentFilter;
+    const anyFilter = selectedOrgs.size > 0 || activeProjects.size > 0 || activeColors.size > 0 || search || assignmentFilter || unknownFilter;
     count.textContent = anyFilter ? `${visible} of ${rows.length} employee(s)` : '';
   }
 
