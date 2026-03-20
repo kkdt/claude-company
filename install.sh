@@ -97,8 +97,9 @@ info "Copying application files..."
 cp "${SCRIPT_DIR}/app.py"          "${INSTALL_DIR}/app.py"
 cp "${SCRIPT_DIR}/requirements.txt" "${INSTALL_DIR}/requirements.txt"
 
-# Copy templates directory
+# Copy templates and static directories
 cp -r "${SCRIPT_DIR}/templates"    "${INSTALL_DIR}/templates"
+cp -r "${SCRIPT_DIR}/static"       "${INSTALL_DIR}/static"
 
 # Copy sample CSV files if present (useful for first run)
 for csv_file in employees.csv projects.csv; do

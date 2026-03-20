@@ -98,6 +98,7 @@ pyinstaller \
     --strip \
     --name claude-company \
     --add-data "${SCRIPT_DIR}/templates:templates" \
+    --add-data "${SCRIPT_DIR}/static:static" \
     --distpath "${SCRIPT_DIR}/dist/${PACKAGE_NAME}" \
     --workpath "${SCRIPT_DIR}/build" \
     --specpath "${SCRIPT_DIR}" \
