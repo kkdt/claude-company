@@ -12,6 +12,7 @@ CHALLENGE_WORD = os.environ.get("CHALLENGE_WORD", "")
 
 PUBLIC_ENDPOINTS = {
     "public_projects", "public_organization", "public_staffing_projections",
+    "projects_export", "public_staffing_export",
     "login", "logout", "static",
 }
 
@@ -592,6 +593,73 @@ def public_staffing_projections():
         to_year=to_year,
         to_month=to_month,
         all_record_months=all_record_months,
+    )
+
+
+@app.route("/public/staffing-projections/export")
+def public_staffing_export():
+    from datetime import date
+    today = date.today()
+    records = load_staffing()
+    employees = load_employees()
+    all_projects = load_projects()
+    active_proj_ids = {p["project_id"] for p in all_projects if p.get("active", True)}
+
+    if today.month == 12:
+        default_to_year, default_to_month = today.year + 1, 1
+    else:
+        default_to_year, default_to_month = today.year, today.month + 1
+    try:
+        from_year = int(request.args.get("from_year", today.year))
+        from_month = int(request.args.get("from_month", today.month))
+        to_year = int(request.args.get("to_year", default_to_year))
+        to_month = int(request.args.get("to_month", default_to_month))
+    except (ValueError, TypeError):
+        from_year, from_month = today.year, today.month
+        to_year, to_month = default_to_year, default_to_month
+
+    filtered = sorted(
+        [r for r in records if (from_year, from_month) <= (r["year"], r["month"]) <= (to_year, to_month)],
+        key=lambda r: (r["year"], r["month"])
+    )
+
+    months = [(r["year"], r["month"]) for r in filtered]
+    month_labels = [f"{yr}-{mo:02d}" for yr, mo in months]
+
+    emp_map = {e["employee_id"]: e for e in employees}
+
+    month_assignments = {}
+    for r in filtered:
+        key = (r["year"], r["month"])
+        for a in r["assignments"]:
+            if a["project_id"] in active_proj_ids:
+                month_assignments.setdefault(key, {}).setdefault(a["employee_id"], []).append(a["project_id"])
+
+    known_ids = {e["employee_id"] for e in employees}
+    ghost_ids = {eid for ma in month_assignments.values() for eid in ma if eid not in known_ids}
+    all_eids = sorted(known_ids | ghost_ids)
+
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow(["Employee ID", "Employee Name", "Supervisor Organization", "Job Profile"] + month_labels)
+    for eid in all_eids:
+        emp = emp_map.get(eid, {})
+        name = emp.get("employee_name", "")
+        supervisor = emp.get("supervisor_organization", "")
+        job_profile = emp.get("job_profile", "")
+        month_projs = [sorted(month_assignments.get(key, {}).get(eid, [])) for key in months]
+        max_slots = max((len(p) for p in month_projs), default=1)
+        for i in range(max(max_slots, 1)):
+            row = [eid, name, supervisor, job_profile]
+            for projs in month_projs:
+                row.append(projs[i] if i < len(projs) else "")
+            writer.writerow(row)
+
+    output.seek(0)
+    return Response(
+        output.getvalue(),
+        mimetype="text/csv",
+        headers={"Content-Disposition": "attachment; filename=staffing_projections.csv"},
     )
 
 

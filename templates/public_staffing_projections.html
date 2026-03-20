@@ -179,7 +179,13 @@ function projTagStyle(pid) {
 
 <div class="toolbar">
   <h2>Staffing Projections</h2>
-  <span style="font-size:0.9rem;color:#666;">{{ months|length }} month(s) &nbsp;·&nbsp; {{ employees|length }} employee(s)</span>
+  <div style="display:flex;align-items:center;gap:0.75rem;">
+    <span style="font-size:0.9rem;color:#666;">{{ months|length }} month(s) &nbsp;·&nbsp; {{ employees|length }} employee(s)</span>
+    <a href="{{ url_for('public_staffing_export', from_year=from_year, from_month=from_month, to_year=to_year, to_month=to_month) }}"
+      style="display:inline-block;padding:0.35rem 0.9rem;font-size:0.85rem;background:#2e7d4f;color:#fff;border-radius:4px;text-decoration:none;white-space:nowrap;">
+      Export to CSV
+    </a>
+  </div>
 </div>
 
 {% if not employees %}

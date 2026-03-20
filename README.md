@@ -207,8 +207,15 @@ podman run --rm \
 
 (New Claude Session)
 
-1. Analyze CLAUDE.md — reviewed the project overview, data models, screen list, and deployment config.
-2. For screens with supervisory org filter, allow the filter to be multi-selection — replaced the single <select> dropdown with toggle pill buttons across staffing_month.html, staffing_projections.html, and public_staffing_projections.html.
-3. Multi-selection filter should be a drop down with checkbox selections for supervisory org — replaced the toggle pill buttons with a custom dropdown button containing checkboxes (with count badge and "Clear all"), consistent across all three staffing templates. 
-4. The "Supervisory Org" drop down filter is not working; does not drop down and show selections — fixed the toggleOrgDropdown() bug where menu.style.display was checked instead of window.getComputedStyle(menu).display, causing the dropdown to never open.
-5. Add "Supervisory Org" multi-select drop down filter to the "Employees" page — added the same checkbox dropdown filter to employees.html with a filter bar, data-org row attributes, and matching JS.
+1. Analyze CLAUDE.md — reviewed project overview, data models, screen list, and deployment config.
+2. For screens with supervisory org filter, allow the filter to be multi-selection — replaced single <select> dropdowns with toggle pill buttons across staffing_month.html, staffing_projections.html, and public_staffing_projections.html.
+3. Multi-selection filter should be a drop down with checkbox selections for supervisory org — replaced toggle pill buttons with a custom dropdown button containing checkboxes (count badge + "Clear all") across all three staffing templates. 
+4. The "Supervisory Org" drop down filter is not working; does not drop down and show selections — fixed toggleOrgDropdown() bug: menu.style.display vs window.getComputedStyle(menu).display.
+5. Add "Supervisory Org" multi-select drop down filter to the "Employees" page — added filter bar, org dropdown, data-org row attributes, and JS to employees.html.
+6. Change "View Employees" navigation to "Employees" — updated base.html.
+7. Update "Upload CSV" in navigation to "Upload" — updated base.html.
+8. Add "Export" button to Public Projects screen — added Export button to public_projects.html toolbar linking to existing projects_export route.
+9. Can we make the Public Projects "Export to CSV" not require login? — added projects_export to PUBLIC_ENDPOINTS in app.py.
+10. Add "Export to CSV" button to Public Staffing Projections screen — created new public_staffing_export route, added to PUBLIC_ENDPOINTS, added button to public_staffing_projections.html.
+11. Update Staffing Projections "Export to CSV" to export all employees in current filter, even those with no assignments — updated route to apply date range filter params and include all known employees (not just those with assignments); updated button to pass filter params. 
+12. Update the Export to CSV for Public Staffing Projections format to the same as exporting from the authenticated Staffing Projections — updated route to output Employee ID, Employee Name, Supervisor Organization, Job Profile + month columns, with multiple rows per employee for multiple project assignments per month.

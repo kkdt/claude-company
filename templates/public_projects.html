@@ -75,7 +75,15 @@
 
 <div class="toolbar">
   <h2>Projects</h2>
-  <span style="font-size:0.9rem;color:#666;">{{ projects|length }} project(s)</span>
+  <div style="display:flex;align-items:center;gap:0.75rem;">
+    <span style="font-size:0.9rem;color:#666;">{{ projects|length }} project(s)</span>
+    {% if projects %}
+    <a href="{{ url_for('projects_export') }}"
+      style="display:inline-block;padding:0.35rem 0.9rem;font-size:0.85rem;background:#2e7d4f;color:#fff;border-radius:4px;text-decoration:none;white-space:nowrap;">
+      Export to CSV
+    </a>
+    {% endif %}
+  </div>
 </div>
 
 {% if projects %}
