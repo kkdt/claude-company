@@ -94,6 +94,19 @@
   }
   .proj-filter-btn:hover { opacity: 0.85; }
   .proj-filter-btn.active { border-color: rgba(0,0,0,.35); box-shadow: 0 0 0 2px rgba(0,0,0,.15); }
+  .org-dropdown { position: relative; }
+  .org-dropdown-menu {
+    display: none; position: absolute; top: calc(100% + 4px); left: 0; z-index: 200;
+    background: #fff; border: 1px solid #ccd; border-radius: 6px;
+    box-shadow: 0 4px 12px rgba(0,0,0,.15); min-width: 220px;
+    max-height: 280px; overflow-y: auto; padding: 0.4rem 0;
+  }
+  .org-dropdown-menu label {
+    display: flex; align-items: center; gap: 0.5rem;
+    padding: 0.3rem 0.75rem; cursor: pointer; font-size: 0.85rem; white-space: nowrap;
+    font-weight: normal;
+  }
+  .org-dropdown-menu label:hover { background: #f5f7fa; }
   th.sortable { cursor: pointer; user-select: none; }
   th.sortable:hover { background: #255480; }
   th.sortable .sort-indicator { margin-left: 0.3rem; opacity: 0.6; font-size: 0.75rem; }
@@ -238,13 +251,22 @@ function projTagStyle(pid) {
   <input type="text" id="emp-search" placeholder="Search by name…"
     oninput="filterRows()"
     style="padding:0.35rem 0.65rem;border:1px solid #ccd;border-radius:4px;font-size:0.875rem;background:#f9fafc;min-width:220px;">
-  <label for="org-filter" style="margin-left:0.5rem;">Supervisory Org</label>
-  <select id="org-filter" onchange="filterRows()">
-    <option value="">— All —</option>
-    {% for org in orgs %}
-    <option value="{{ org }}">{{ org }}</option>
-    {% endfor %}
-  </select>
+  <div class="org-dropdown" style="margin-left:0.5rem;">
+    <button type="button" id="org-dropdown-btn" onclick="toggleOrgDropdown()"
+      style="padding:0.35rem 0.65rem;border:1px solid #ccd;border-radius:4px;font-size:0.875rem;background:#f9fafc;cursor:pointer;display:inline-flex;align-items:center;gap:0.4rem;white-space:nowrap;">
+      Supervisory Org
+      <span id="org-dropdown-count" style="display:none;background:#1a3a5c;color:#fff;border-radius:999px;padding:0 0.45rem;font-size:0.72rem;font-weight:700;line-height:1.5;"></span>
+      <span style="opacity:0.45;font-size:0.7rem;">▾</span>
+    </button>
+    <div id="org-dropdown-menu" class="org-dropdown-menu">
+      {% for org in orgs %}
+      <label><input type="checkbox" class="org-checkbox" value="{{ org }}" onchange="orgCheckboxChanged(this)"> {{ org }}</label>
+      {% endfor %}
+      <div style="border-top:1px solid #eee;margin-top:0.25rem;padding:0.3rem 0.75rem;">
+        <button type="button" onclick="clearOrgFilters()" style="font-size:0.78rem;color:#888;background:none;border:none;cursor:pointer;padding:0;">Clear all</button>
+      </div>
+    </div>
+  </div>
   <span class="filter-count" id="filter-count"></span>
 </div>
 
@@ -344,13 +366,47 @@ function projTagStyle(pid) {
     return true;
   }
 
+  const selectedOrgs = new Set();
+
+  function toggleOrgDropdown() {
+    const menu = document.getElementById('org-dropdown-menu');
+    const hidden = window.getComputedStyle(menu).display === 'none';
+    menu.style.display = hidden ? 'block' : 'none';
+  }
+
+  function orgCheckboxChanged(cb) {
+    if (cb.checked) { selectedOrgs.add(cb.value); } else { selectedOrgs.delete(cb.value); }
+    updateOrgDropdownLabel();
+    filterRows();
+  }
+
+  function updateOrgDropdownLabel() {
+    const countEl = document.getElementById('org-dropdown-count');
+    countEl.textContent = selectedOrgs.size || '';
+    countEl.style.display = selectedOrgs.size > 0 ? '' : 'none';
+  }
+
+  function clearOrgFilters() {
+    selectedOrgs.clear();
+    document.querySelectorAll('.org-checkbox').forEach(cb => cb.checked = false);
+    updateOrgDropdownLabel();
+    document.getElementById('org-dropdown-menu').style.display = 'none';
+    filterRows();
+  }
+
+  document.addEventListener('click', function(e) {
+    const dd = document.querySelector('.org-dropdown');
+    if (dd && !dd.contains(e.target)) {
+      document.getElementById('org-dropdown-menu').style.display = 'none';
+    }
+  });
+
   function filterRows() {
-    const org = document.getElementById('org-filter').value;
     const search = document.getElementById('emp-search').value.trim();
     const rows = document.querySelectorAll('tbody tr');
     let visible = 0;
     rows.forEach(row => {
-      const orgMatch = !org || row.dataset.org === org;
+      const orgMatch = selectedOrgs.size === 0 || selectedOrgs.has(row.dataset.org);
       const nameEl = row.querySelector('.emp-name');
       const nameMatch = fuzzyMatch(nameEl ? nameEl.textContent.trim() : '', search);
       const show = orgMatch && nameMatch;
@@ -358,7 +414,7 @@ function projTagStyle(pid) {
       if (show) visible++;
     });
     const count = document.getElementById('filter-count');
-    count.textContent = (org || search) ? `${visible} of ${rows.length} employee(s)` : '';
+    count.textContent = (selectedOrgs.size > 0 || search) ? `${visible} of ${rows.length} employee(s)` : '';
   }
 
   const selectedCols = new Set();

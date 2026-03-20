@@ -43,6 +43,26 @@
   thead th[data-col] .sort-icon { margin-left: 0.4rem; opacity: 0.4; font-size: 0.75rem; }
   thead th[data-col].asc  .sort-icon { opacity: 1; }
   thead th[data-col].desc .sort-icon { opacity: 1; }
+  .filter-bar {
+    background: #fff; border-radius: 8px; box-shadow: 0 1px 4px rgba(0,0,0,.1);
+    padding: 0.75rem 1.25rem; margin-bottom: 1rem;
+    display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap;
+  }
+  .filter-bar label { font-size: 0.8rem; font-weight: 600; color: #555; white-space: nowrap; }
+  .filter-count { font-size: 0.8rem; color: #888; }
+  .org-dropdown { position: relative; }
+  .org-dropdown-menu {
+    display: none; position: absolute; top: calc(100% + 4px); left: 0; z-index: 200;
+    background: #fff; border: 1px solid #ccd; border-radius: 6px;
+    box-shadow: 0 4px 12px rgba(0,0,0,.15); min-width: 220px;
+    max-height: 280px; overflow-y: auto; padding: 0.4rem 0;
+  }
+  .org-dropdown-menu label {
+    display: flex; align-items: center; gap: 0.5rem;
+    padding: 0.3rem 0.75rem; cursor: pointer; font-size: 0.85rem; white-space: nowrap;
+    font-weight: normal;
+  }
+  .org-dropdown-menu label:hover { background: #f5f7fa; }
 </style>
 
 <div class="toolbar">
@@ -57,6 +77,28 @@
 </div>
 
 {% if employees %}
+{% set orgs = employees | map(attribute='supervisor_organization') | select | unique | sort | list %}
+<div class="filter-bar">
+  <label>Supervisory Org</label>
+  <div class="org-dropdown">
+    <button type="button" id="org-dropdown-btn" onclick="toggleOrgDropdown()"
+      style="padding:0.35rem 0.65rem;border:1px solid #ccd;border-radius:4px;font-size:0.875rem;background:#f9fafc;cursor:pointer;display:inline-flex;align-items:center;gap:0.4rem;white-space:nowrap;">
+      All Orgs
+      <span id="org-dropdown-count" style="display:none;background:#1a3a5c;color:#fff;border-radius:999px;padding:0 0.45rem;font-size:0.72rem;font-weight:700;line-height:1.5;"></span>
+      <span style="opacity:0.45;font-size:0.7rem;">▾</span>
+    </button>
+    <div id="org-dropdown-menu" class="org-dropdown-menu">
+      {% for org in orgs %}
+      <label><input type="checkbox" class="org-checkbox" value="{{ org }}" onchange="orgCheckboxChanged(this)"> {{ org }}</label>
+      {% endfor %}
+      <div style="border-top:1px solid #eee;margin-top:0.25rem;padding:0.3rem 0.75rem;">
+        <button type="button" onclick="clearOrgFilters()" style="font-size:0.78rem;color:#888;background:none;border:none;cursor:pointer;padding:0;">Clear all</button>
+      </div>
+    </div>
+  </div>
+  <span class="filter-count" id="filter-count"></span>
+</div>
+
 <div class="table-wrap">
   <table>
     <thead>
@@ -72,7 +114,7 @@
     </thead>
     <tbody>
       {% for emp in employees %}
-      <tr>
+      <tr data-org="{{ emp.supervisor_organization or '' }}">
         <td><a href="{{ url_for('employee_detail', employee_id=emp.employee_id) }}">{{ emp.employee_id }}</a></td>
         <td><a href="{{ url_for('employee_detail', employee_id=emp.employee_id) }}">{{ emp.employee_name }}</a></td>
         <td>{{ emp.job_profile }}</td>
@@ -139,5 +181,52 @@
     });
     rows.forEach(r => tbody.appendChild(r));
   }
+
+  const selectedOrgs = new Set();
+
+  function toggleOrgDropdown() {
+    const menu = document.getElementById('org-dropdown-menu');
+    const hidden = window.getComputedStyle(menu).display === 'none';
+    menu.style.display = hidden ? 'block' : 'none';
+  }
+
+  function orgCheckboxChanged(cb) {
+    if (cb.checked) { selectedOrgs.add(cb.value); } else { selectedOrgs.delete(cb.value); }
+    updateOrgDropdownLabel();
+    filterRows();
+  }
+
+  function updateOrgDropdownLabel() {
+    const countEl = document.getElementById('org-dropdown-count');
+    countEl.textContent = selectedOrgs.size || '';
+    countEl.style.display = selectedOrgs.size > 0 ? '' : 'none';
+  }
+
+  function clearOrgFilters() {
+    selectedOrgs.clear();
+    document.querySelectorAll('.org-checkbox').forEach(cb => cb.checked = false);
+    updateOrgDropdownLabel();
+    document.getElementById('org-dropdown-menu').style.display = 'none';
+    filterRows();
+  }
+
+  function filterRows() {
+    const rows = document.querySelectorAll('tbody tr');
+    let visible = 0;
+    rows.forEach(row => {
+      const show = selectedOrgs.size === 0 || selectedOrgs.has(row.dataset.org);
+      row.style.display = show ? '' : 'none';
+      if (show) visible++;
+    });
+    const count = document.getElementById('filter-count');
+    count.textContent = selectedOrgs.size > 0 ? `${visible} of ${rows.length} employee(s)` : '';
+  }
+
+  document.addEventListener('click', function(e) {
+    const dd = document.querySelector('.org-dropdown');
+    if (dd && !dd.contains(e.target)) {
+      document.getElementById('org-dropdown-menu').style.display = 'none';
+    }
+  });
 </script>
 {% endblock %}

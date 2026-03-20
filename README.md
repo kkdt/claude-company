@@ -192,11 +192,23 @@ podman run --rm \
 58. On the Upload Employee CSV screen, ensure that the CSV schema reference fits with the import section and does not overflow (follow-up fix)
 59. Fix Projects screen "Project ID" column not sorting
 60. On Staffing page, label the months "YYYY-MM"
-61. Add assignment filters to Staffing Projections — Added "Has Assignments" and "No Assignments" toggle buttons to the employee filter bar, wired into applyFilters().
-62. Remove the "Assignments" label — Removed the label, kept the two filter buttons; fixed a duplicate style attribute introduced in the process.
-63. Add "Export to CSV" — Added button to the toolbar exporting: Employee ID, Employee Name, Supervisor Organization, Job Profile, and one column per month. Exported only visible (filtered) rows.
-64. Change CSV to one row per assignment — Switched to flat format: Employee ID, Employee Name, Supervisor Organization, Job Profile, Month, Project — one row per assignment, employees with multiple projects in a month get multiple rows.
-65. Revert to months-as-headers format — Switched back to month columns; employees with no assignment get an empty cell; multiple projects in a month joined with ; in one cell.
-66. Duplicate rows for multiple assignments, months as headers — Each month remains a column header; if an employee has N projects in their busiest month, they get N rows — row i shows projects[i] for each month, empty if that month has fewer than i+1 assignments.
-67. Add color filter buttons to Staffing Projections — Added a Color filter bar below the Project filter bar, one button per unique color among active projects. Buttons are color-styled with auto-contrasted text and a tooltip listing project IDs. Color filter stacks with all other filters; includes a Clear button.
-68. Restrict color filter to active projects only — Added active field to PROJ_META and filtered the color bar builder to skip inactive projects.
+
+(New Claude Session)
+
+1. Analayze CLAUDE.md
+2. Add assignment filters to Staffing Projections — Added "Has Assignments" and "No Assignments" toggle buttons to the employee filter bar, wired into applyFilters().
+3. Remove the "Assignments" label — Removed the label, kept the two filter buttons; fixed a duplicate style attribute introduced in the process.
+4. Add "Export to CSV" — Added button to the toolbar exporting: Employee ID, Employee Name, Supervisor Organization, Job Profile, and one column per month. Exported only visible (filtered) rows.
+5. Change CSV to one row per assignment — Switched to flat format: Employee ID, Employee Name, Supervisor Organization, Job Profile, Month, Project — one row per assignment, employees with multiple projects in a onth get multiple rows.
+6. Revert to months-as-headers format — Switched back to month columns; employees with no assignment get an empty cell; multiple projects in a month joined with ; in one cell.
+7. Duplicate rows for multiple assignments, months as headers — Each month remains a column header; if an employee has N projects in their busiest month, they get N rows — row i shows projects[i] for each month, empty if that month has fewer than i+1 assignments.
+8. Add color filter buttons to Staffing Projections — Added a Color filter bar below the Project filter bar, one button per unique color among active projects. Buttons are color-styled with auto-contrasted text and a tooltip listing project IDs. Color filter stacks with all other filters; includes a Clear button.
+9. Restrict color filter to active projects only — Added active field to PROJ_META and filtered the color bar builder to skip inactive projects.
+
+(New Claude Session)
+
+1. Analyze CLAUDE.md — reviewed the project overview, data models, screen list, and deployment config.
+2. For screens with supervisory org filter, allow the filter to be multi-selection — replaced the single <select> dropdown with toggle pill buttons across staffing_month.html, staffing_projections.html, and public_staffing_projections.html.
+3. Multi-selection filter should be a drop down with checkbox selections for supervisory org — replaced the toggle pill buttons with a custom dropdown button containing checkboxes (with count badge and "Clear all"), consistent across all three staffing templates. 
+4. The "Supervisory Org" drop down filter is not working; does not drop down and show selections — fixed the toggleOrgDropdown() bug where menu.style.display was checked instead of window.getComputedStyle(menu).display, causing the dropdown to never open.
+5. Add "Supervisory Org" multi-select drop down filter to the "Employees" page — added the same checkbox dropdown filter to employees.html with a filter bar, data-org row attributes, and matching JS.

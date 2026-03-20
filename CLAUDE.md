@@ -36,6 +36,9 @@ All other CSV headers maps to a JSON key `attributes` that is a JSON list of tup
 
 ## Screens
 
+All screens require a challenge-word login to access except for the "Public" navigation screens. The Public screens are read-only data without
+sensitive information such as hourly rate and salary data.
+
 1. Upload employee CSV file
 
 2. View all employees
@@ -51,6 +54,8 @@ All other CSV headers maps to a JSON key `attributes` that is a JSON list of tup
     - An employee is matrixed across different projects
     - An employee can support multiple projects in a single month
     - Screens to project staffing assignments for future months while preserving past assignments in JSON format
+
+7. Public - Public view 
 
 ## Application Deployment
 

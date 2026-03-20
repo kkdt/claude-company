@@ -47,8 +47,8 @@
     <h1>Company</h1>
     <nav>
       {% if session.get('logged_in') %}
-      <a href="{{ url_for('upload') }}">Upload CSV</a>
-      <a href="{{ url_for('employees') }}">View Employees</a>
+      <a href="{{ url_for('upload') }}">Upload</a>
+      <a href="{{ url_for('employees') }}">Employees</a>
       <a href="{{ url_for('organization') }}">Organization</a>
       <a href="{{ url_for('projects') }}">Projects</a>
       <a href="{{ url_for('staffing') }}">Staffing</a>
