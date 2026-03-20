@@ -78,6 +78,14 @@ for json_file in employees.json projects.json staffing.json; do
 done
 success "data/ directory ready."
 
+# ── Tar archive ───────────────────────────────────────────────────────────────
+ARCH="$(uname -m)"
+TARBALL="${SCRIPT_DIR}/dist/claude-company-linux-${ARCH}.tar.gz"
+
+info "Creating tar archive..."
+tar -czf "${TARBALL}" -C "${SCRIPT_DIR}/dist" claude-company
+success "Archive created: ${TARBALL}  ($(du -sh "${TARBALL}" | cut -f1))"
+
 # ── Summary ───────────────────────────────────────────────────────────────────
 BINARY="${PACKAGE_DIR}/claude-company"
 SIZE="$(du -sh "${BINARY}" | cut -f1)"
@@ -87,6 +95,7 @@ echo -e "${GREEN}${BOLD}Build complete!${RESET}"
 echo "──────────────────────────────────────────"
 echo -e "  Package : ${CYAN}${PACKAGE_DIR}${RESET}"
 echo -e "  Binary  : ${CYAN}${BINARY}${RESET}  (${SIZE})"
+echo -e "  Archive : ${CYAN}${TARBALL}${RESET}"
 echo
 echo -e "${BOLD}Package contents:${RESET}"
 find "${PACKAGE_DIR}" | sed 's|'"${SCRIPT_DIR}/dist/"'||' | sort | \
@@ -96,7 +105,4 @@ echo -e "${BOLD}To run:${RESET}"
 echo -e "  export CHALLENGE_WORD=your-secret"
 echo -e "  ${CYAN}${BINARY}${RESET}"
 echo -e "  # Then open http://localhost:8080"
-echo
-echo -e "${BOLD}To distribute:${RESET}"
-echo -e "  tar -czf claude-company-linux-x86_64.tar.gz -C ${SCRIPT_DIR}/dist claude-company"
 echo
