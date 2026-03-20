@@ -20,6 +20,22 @@ die()     { echo -e "${RED}[ERROR]${RESET} $*" >&2; exit 1; }
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
+# ── Argument parsing ──────────────────────────────────────────────────────────
+CLEAN_ONLY=false
+for arg in "$@"; do
+    case "${arg}" in
+        --clean) CLEAN_ONLY=true ;;
+        *) die "Unknown argument: ${arg}" ;;
+    esac
+done
+
+if $CLEAN_ONLY; then
+    info "Cleaning build artifacts..."
+    rm -rf "${SCRIPT_DIR}/build" "${SCRIPT_DIR}/dist" "${SCRIPT_DIR}/claude-company.spec"
+    success "Cleaned: build/  dist/  claude-company.spec"
+    exit 0
+fi
+
 # ── Git version / tag detection ───────────────────────────────────────────────
 GIT_TAG=""
 if command -v git >/dev/null 2>&1 && git -C "${SCRIPT_DIR}" rev-parse --is-inside-work-tree >/dev/null 2>&1; then

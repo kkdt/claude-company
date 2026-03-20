@@ -30,3 +30,4 @@ data/*.json
 
 # Claude
 .claude/settings.local.json
+*.spec
