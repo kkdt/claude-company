@@ -24,3 +24,31 @@ Usage
 bash install.sh
 export CHALLENGE_WORD=your-secret
 ~/claude-company/claude-company.sh
+
+## Windows
+
+install.ps1 — what it does:
+
+  Prompts
+  - Installation directory — default %USERPROFILE%\claude-company
+  - Data directory — default %USERPROFILE%\claude-company\data
+  - Confirms before proceeding
+  - Optionally creates a Start Menu shortcut
+
+  Steps performed
+  1. Pre-flight — finds python / python3 / py, requires 3.9+, checks pip & venv
+  2. Creates both directories
+  3. Copies app.py, templates\, requirements.txt, sample CSVs, pip.conf
+  4. Creates a directory junction (mklink /J) from $InstallDir\data → $DataDir when they differ (same transparent trick as the Linux installer — no changes to app.py needed)
+  5. Seeds empty employees.json, projects.json, staffing.json
+  6. Creates a Python virtualenv and installs dependencies
+  7. Writes two launchers: claude-company.bat (cmd) and claude-company.ps1 (PowerShell), both warn if CHALLENGE_WORD is unset
+
+  Usage
+  # Run the installer (may need to allow scripts once)
+  Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
+  .\install.ps1
+
+  # Then start the app
+  $env:CHALLENGE_WORD = "your-secret"
+  ~\claude-company\claude-company.bat
