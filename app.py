@@ -3,9 +3,17 @@ import json
 import io
 import os
 import re
+import sys
 from flask import Flask, request, redirect, url_for, render_template, flash, Response, jsonify, session
 
-app = Flask(__name__)
+# When frozen by PyInstaller (--onefile), bundled files are extracted to a
+# temporary directory pointed to by sys._MEIPASS.  At runtime the binary
+# itself sits next to the data/ directory, so data paths use the executable's
+# location rather than __file__ (which resolves inside the temp bundle).
+_BUNDLE_DIR = getattr(sys, '_MEIPASS', os.path.dirname(os.path.abspath(__file__)))
+_RUNTIME_DIR = os.path.dirname(os.path.abspath(sys.executable if getattr(sys, 'frozen', False) else __file__))
+
+app = Flask(__name__, template_folder=os.path.join(_BUNDLE_DIR, 'templates'))
 app.secret_key = "workforce-secret"
 
 CHALLENGE_WORD = os.environ.get("CHALLENGE_WORD", "")
@@ -22,9 +30,9 @@ def require_login():
         if not session.get("logged_in"):
             return redirect(url_for("login", next=request.path))
 
-DB_PATH = os.path.join(os.path.dirname(__file__), "data", "employees.json")
-PROJECTS_PATH = os.path.join(os.path.dirname(__file__), "data", "projects.json")
-STAFFING_PATH = os.path.join(os.path.dirname(__file__), "data", "staffing.json")
+DB_PATH       = os.path.join(_RUNTIME_DIR, "data", "employees.json")
+PROJECTS_PATH = os.path.join(_RUNTIME_DIR, "data", "projects.json")
+STAFFING_PATH = os.path.join(_RUNTIME_DIR, "data", "staffing.json")
 
 PROJECT_FIELD_MAP = {
     "Project": "project_id",
