@@ -278,7 +278,7 @@ def export_csv():
     all_headers = core_headers + attr_keys
 
     output = io.StringIO()
-    writer = csv.DictWriter(output, fieldnames=all_headers, extrasaction="ignore")
+    writer = csv.DictWriter(output, fieldnames=all_headers, extrasaction="ignore", quoting=csv.QUOTE_ALL)
     writer.writeheader()
 
     for emp in employees:
@@ -359,7 +359,7 @@ def organization_export():
         "annual_salary", "hourly_rate", "location", "salary_min", "salary_mid", "salary_max"
     ]]
     output = io.StringIO()
-    writer = csv.DictWriter(output, fieldnames=core_headers + attr_keys, extrasaction="ignore")
+    writer = csv.DictWriter(output, fieldnames=core_headers + attr_keys, extrasaction="ignore", quoting=csv.QUOTE_ALL)
     writer.writeheader()
     for emp in export_employees:
         row = {reverse_map[k]: emp.get(k, "") for k in FIELD_MAP.values() if k in reverse_map}
@@ -446,7 +446,7 @@ def projects_export():
                 seen.add(attr["key"])
 
     output = io.StringIO()
-    writer = csv.DictWriter(output, fieldnames=core_headers + attr_keys, extrasaction="ignore")
+    writer = csv.DictWriter(output, fieldnames=core_headers + attr_keys, extrasaction="ignore", quoting=csv.QUOTE_ALL)
     writer.writeheader()
     for p in all_projects:
         row = {
@@ -648,7 +648,7 @@ def public_staffing_export():
     all_eids = sorted(known_ids | ghost_ids)
 
     output = io.StringIO()
-    writer = csv.writer(output)
+    writer = csv.writer(output, quoting=csv.QUOTE_ALL)
     writer.writerow(["Employee ID", "Employee Name", "Supervisor Organization", "Job Profile"] + month_labels)
     for eid in all_eids:
         emp = emp_map.get(eid, {})

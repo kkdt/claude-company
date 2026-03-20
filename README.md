@@ -210,7 +210,7 @@ podman run --rm \
 (New Claude Session)
 
 1. Analyze CLAUDE.md — reviewed project overview, data models, screen list, and deployment config.
-2. For screens with supervisory org filter, allow the filter to be multi-selection — replaced single <select> dropdowns with toggle pill buttons across staffing_month.html, staffing_projections.html, and public_staffing_projections.html.
+2. For screens with supervisory org filter, allow the filter to be multi-selection — replaced single `<select>` dropdowns with toggle pill buttons across staffing_month.html, staffing_projections.html, and public_staffing_projections.html.
 3. Multi-selection filter should be a drop down with checkbox selections for supervisory org — replaced toggle pill buttons with a custom dropdown button containing checkboxes (count badge + "Clear all") across all three staffing templates. 
 4. The "Supervisory Org" drop down filter is not working; does not drop down and show selections — fixed toggleOrgDropdown() bug: menu.style.display vs window.getComputedStyle(menu).display.
 5. Add "Supervisory Org" multi-select drop down filter to the "Employees" page — added filter bar, org dropdown, data-org row attributes, and JS to employees.html.
@@ -221,13 +221,14 @@ podman run --rm \
 10. Add "Export to CSV" button to Public Staffing Projections screen — created new public_staffing_export route, added to PUBLIC_ENDPOINTS, added button to public_staffing_projections.html.
 11. Update Staffing Projections "Export to CSV" to export all employees in current filter, even those with no assignments — updated route to apply date range filter params and include all known employees (not just those with assignments); updated button to pass filter params. 
 12. Update the Export to CSV for Public Staffing Projections format to the same as exporting from the authenticated Staffing Projections — updated route to output Employee ID, Employee Name, Supervisor Organization, Job Profile + month columns, with multiple rows per employee for multiple project assignments per month.
+13. Update all "Export to CSV" to double-quote all entries — added quoting=csv.QUOTE_ALL to all four server-side csv.DictWriter/csv.writer calls; client-side JS export was already quoting all fields.
 
 (New Claude Session)
 
 1. Analyze CLAUDE.md
-2. Create Linux/Unix installer — prompts for install location (default $HOME/claude-company) and data directory (default $HOME/claude-company/data)
+2. Create Linux/Unix installer — prompts for install location (default `$HOME/claude-company`) and data directory (default `$HOME/claude-company/data`)
 3. Create Linux/Unix installer (repeated) — stopped by user
-4. Create Windows installer — same prompts with Windows defaults (%USERPROFILE%\claude-company)
+4. Create Windows installer — same prompts with Windows defaults (`%USERPROFILE%`\claude-company)
 5. How to build a single-file executable on Linux/Unix — answered with PyInstaller instructions
 6. Create build.sh — packages binary + data/ folder, creates .tar.gz
 7. Update build.sh to also package using tar — automated the tar step
