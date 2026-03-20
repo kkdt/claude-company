@@ -53,7 +53,7 @@ install.ps1 — what it does:
   $env:CHALLENGE_WORD = "your-secret"
   ~\claude-company\claude-company.bat
 
-## Single-file executable
+## Single-file executable (Linux / Unix)
 
 ● For a Flask app like this, PyInstaller is the standard approach. Here's how:
 
@@ -125,3 +125,51 @@ install.ps1 — what it does:
     staffing.json
 
   Ship the binary alongside an empty data/ directory (or let the installer create it). The install.sh you already have can be updated to run the binary instead of python app.py.
+
+
+## Single-file executable (Windows)
+
+❯ How do I build single file executable to run this application on Windows host?
+
+● The process mirrors Linux — PyInstaller on Windows — but must be run on a Windows machine (PyInstaller cannot cross-compile).
+
+  Requirements
+
+  - Python 3.9+ installed with pip and venv checked
+  - Run in Command Prompt or PowerShell
+
+  Steps
+
+  1. Set up the virtual environment
+  cd claude-company
+  python -m venv venv
+  venv\Scripts\activate
+  pip install -r requirements.txt
+  pip install pyinstaller
+
+  2. Build the executable
+  pyinstaller --onefile --strip --name claude-company --add-data "templates;templates" app.py
+
+  ▎ Note the separator is semicolon (;) on Windows, not colon.
+
+  Output: dist\claude-company.exe
+
+  3. Assemble the package
+  mkdir dist\claude-company-package
+  move dist\claude-company.exe dist\claude-company-package\
+  mkdir dist\claude-company-package\data
+  echo [] > dist\claude-company-package\data\employees.json
+  echo [] > dist\claude-company-package\data\projects.json
+  echo [] > dist\claude-company-package\data\staffing.json
+
+  4. Run it
+  set CHALLENGE_WORD=your-secret
+  dist\claude-company-package\claude-company.exe
+
+  Then open http://localhost:8080.
+
+  ---
+  Add a build.ps1 script?
+
+  I can create a build.ps1 that automates all of this — with the same --clean flag, Git tag versioning, and a .zip archive — mirroring what build.sh does on Linux. Want me to do that?
+  

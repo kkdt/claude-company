@@ -193,6 +193,8 @@ podman run --rm \
 59. Fix Projects screen "Project ID" column not sorting
 60. On Staffing page, label the months "YYYY-MM"
 
+### Phase 3 - Convenience Features
+
 (New Claude Session)
 
 1. Analayze CLAUDE.md
@@ -219,3 +221,19 @@ podman run --rm \
 10. Add "Export to CSV" button to Public Staffing Projections screen — created new public_staffing_export route, added to PUBLIC_ENDPOINTS, added button to public_staffing_projections.html.
 11. Update Staffing Projections "Export to CSV" to export all employees in current filter, even those with no assignments — updated route to apply date range filter params and include all known employees (not just those with assignments); updated button to pass filter params. 
 12. Update the Export to CSV for Public Staffing Projections format to the same as exporting from the authenticated Staffing Projections — updated route to output Employee ID, Employee Name, Supervisor Organization, Job Profile + month columns, with multiple rows per employee for multiple project assignments per month.
+
+(New Claude Session)
+
+1. Analyze CLAUDE.md
+2. Create Linux/Unix installer — prompts for install location (default $HOME/claude-company) and data directory (default $HOME/claude-company/data)
+3. Create Linux/Unix installer (repeated) — stopped by user
+4. Create Windows installer — same prompts with Windows defaults (%USERPROFILE%\claude-company)
+5. How to build a single-file executable on Linux/Unix — answered with PyInstaller instructions
+6. Create build.sh — packages binary + data/ folder, creates .tar.gz
+7. Update build.sh to also package using tar — automated the tar step
+8. Update build.sh to check for Git tag — include tag version in folder and archive names
+9. Remove the "v" from the version — strip leading v from Git tag
+10. Update build.sh to clean up with --clean flag
+11. How to build a single-file executable on Windows — answered with PyInstaller + PowerShell instructions
+12. Create build.ps1 — Windows equivalent of build.sh with -Clean, Git tag versioning, .zip archive
+13. Generate build instructions — created BUILDING.md
