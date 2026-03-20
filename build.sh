@@ -19,7 +19,30 @@ success() { echo -e "${GREEN}[OK]${RESET}    $*"; }
 die()     { echo -e "${RED}[ERROR]${RESET} $*" >&2; exit 1; }
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PACKAGE_DIR="${SCRIPT_DIR}/dist/claude-company"
+
+# ── Git version / tag detection ───────────────────────────────────────────────
+GIT_TAG=""
+if command -v git >/dev/null 2>&1 && git -C "${SCRIPT_DIR}" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+    GIT_TAG="$(git -C "${SCRIPT_DIR}" tag --points-at HEAD 2>/dev/null | head -n1)"
+fi
+
+if [[ -n "${GIT_TAG}" ]]; then
+    VERSION="${GIT_TAG#v}"
+    info "Git tag detected: ${VERSION}"
+else
+    VERSION=""
+    info "No Git tag on current commit — building without version suffix."
+fi
+
+# Folder and archive names include version when a tag is present
+# e.g.  claude-company-1.2.0  /  claude-company-1.2.0-linux-x86_64.tar.gz
+if [[ -n "${VERSION}" ]]; then
+    PACKAGE_NAME="claude-company-${VERSION}"
+else
+    PACKAGE_NAME="claude-company"
+fi
+
+PACKAGE_DIR="${SCRIPT_DIR}/dist/${PACKAGE_NAME}"
 
 echo -e "${BOLD}"
 echo "╔══════════════════════════════════════════╗"
@@ -49,7 +72,7 @@ success "Dependencies ready."
 
 # ── Clean previous build artifacts ───────────────────────────────────────────
 info "Cleaning previous build artifacts..."
-rm -rf "${SCRIPT_DIR}/build" "${PACKAGE_DIR}"
+rm -rf "${SCRIPT_DIR}/build" "${SCRIPT_DIR}/dist/${PACKAGE_NAME}"
 success "Clean."
 
 # ── PyInstaller ───────────────────────────────────────────────────────────────
@@ -59,7 +82,7 @@ pyinstaller \
     --strip \
     --name claude-company \
     --add-data "${SCRIPT_DIR}/templates:templates" \
-    --distpath "${SCRIPT_DIR}/dist/claude-company" \
+    --distpath "${SCRIPT_DIR}/dist/${PACKAGE_NAME}" \
     --workpath "${SCRIPT_DIR}/build" \
     --specpath "${SCRIPT_DIR}" \
     "${SCRIPT_DIR}/app.py"
@@ -80,10 +103,10 @@ success "data/ directory ready."
 
 # ── Tar archive ───────────────────────────────────────────────────────────────
 ARCH="$(uname -m)"
-TARBALL="${SCRIPT_DIR}/dist/claude-company-linux-${ARCH}.tar.gz"
+TARBALL="${SCRIPT_DIR}/dist/${PACKAGE_NAME}-linux-${ARCH}.tar.gz"
 
 info "Creating tar archive..."
-tar -czf "${TARBALL}" -C "${SCRIPT_DIR}/dist" claude-company
+tar -czf "${TARBALL}" -C "${SCRIPT_DIR}/dist" "${PACKAGE_NAME}"
 success "Archive created: ${TARBALL}  ($(du -sh "${TARBALL}" | cut -f1))"
 
 # ── Summary ───────────────────────────────────────────────────────────────────
@@ -98,7 +121,7 @@ echo -e "  Binary  : ${CYAN}${BINARY}${RESET}  (${SIZE})"
 echo -e "  Archive : ${CYAN}${TARBALL}${RESET}"
 echo
 echo -e "${BOLD}Package contents:${RESET}"
-find "${PACKAGE_DIR}" | sed 's|'"${SCRIPT_DIR}/dist/"'||' | sort | \
+find "${PACKAGE_DIR}" | sed "s|${SCRIPT_DIR}/dist/||" | sort | \
     awk 'NR==1{print "  "$0; next} {printf "  %-s\n", $0}'
 echo
 echo -e "${BOLD}To run:${RESET}"
