@@ -204,4 +204,4 @@ podman run --rm \
 59. Fix Projects screen "Project ID" column not sorting
 60. On Staffing page, label the months "YYYY-MM"
 
-For additional instruction history to Claude Code that builds upon the features above, see [additional-fatures.md](docs/additional-features.md).
+For additional instruction history to Claude Code that builds upon the features above, see [additional-features.md](docs/additional-features.md).
