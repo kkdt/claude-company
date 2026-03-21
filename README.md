@@ -6,6 +6,8 @@ A web application for importing and viewing employee data from CSV files. The sa
 Claude and rolls up to the CEO "Peter Parker." Likewise, a sample [projects.csv](projects.csv) was randomly generated the same way and can be
 used to seed the Projects data.
 
+Please see [INSTALL.md](INSTALL.md) for the installation details.
+
 Use cases (basic)
 
 - A master CSV file determines the current division employees with core schema data and additional, flexible attributes.
