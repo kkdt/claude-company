@@ -251,3 +251,4 @@ podman run --rm \
 7. Fix install.sh failing with "pip is not available" — removed system pip pre-flight check, venv's bundled pip is sufficient
 8. Add CHALLENGE_WORD prompt to install.sh — hidden input (read -rs), confirmation, match check, saved to .challenge_word with chmod 600, launcher reads from file
 9. Update install.ps1 with the same changes — Read-Host -AsSecureString, confirmation loop, saved as hidden file, both launchers updated to read from file
+10. Create INSTALL.md — installation instructions for both platforms
