@@ -113,7 +113,7 @@ podman run --rm \
 2. Update .gitignore for project — added Python, app data, and editor patterns
 3. Generate instructions on how to run on laptop — provided setup/run steps in chat
 4. Generate pip.conf for project — created pip.conf pointing to PyPI with trusted hosts
-5. Add an Employee Details view — added /employees/<employee_id> route, employee_detail.html template, and linked Employee ID/Name columns
+5. Add an Employee Details view — added `/employees/<employee_id>` route, employee_detail.html template, and linked Employee ID/Name columns
 6. Add "Details" button for each employee — added a Details button in the last column of the employee table linking to the detail view
 7. Create "Organization" view — added /organization route, organization.html tree view grouped by Supervisory Organization with expand/collapse controls and Details buttons
 8. Add "View Chart" button to Organization view — added /organization/chart route, organization_chart.html SVG-based org chart with zoom, pan, connector lines, and clickable employee cards
