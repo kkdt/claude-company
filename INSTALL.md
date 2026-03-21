@@ -1,5 +1,24 @@
 # Claude Company — Installation Guide
 
+## Table of Contents
+
+- [Prerequisites](#prerequisites)
+- [Linux / macOS](#linux--macos)
+  - [1. Run the installer](#1-run-the-installer)
+  - [2. Answer the prompts](#2-answer-the-prompts)
+  - [3. Optional: systemd service](#3-optional-systemd-service)
+  - [4. Start the application](#4-start-the-application)
+- [Windows](#windows)
+  - [1. Allow script execution](#1-allow-script-execution-if-not-already-set)
+  - [2. Run the installer](#2-run-the-installer)
+  - [3. Answer the prompts](#3-answer-the-prompts)
+  - [4. Optional: Start Menu shortcut](#4-optional-start-menu-shortcut)
+  - [5. Start the application](#5-start-the-application)
+- [Security note](#security-note)
+- [Troubleshooting](#troubleshooting)
+
+---
+
 ## Prerequisites
 
 | Platform | Requirement |

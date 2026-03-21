@@ -259,3 +259,4 @@ podman run --rm \
 15. Add "Import Example" button to Projects screen — new route projects_import_example in app.py, btn-secondary button in projects.html
 16. Restrict projects_import_example (and projects_upload) to authenticated sessions — explicit session.get("logged_in") check added to both routes
 17. Make "Import Example" buttons consistent — added .btn-example to base.html, updated projects.html to use it, removed local definition from upload.html
+18. Add table of contents to INSTALL.md
