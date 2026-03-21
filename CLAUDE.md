@@ -15,7 +15,7 @@ The following represent an Employee from the CSV header file.
 * Header "Employee ID" maps to JSON key `employee_id`
 * Header "Last Name, First Name" maps to JSON key `employee_name`
 * Header "Job Profile" maps to JSON key `job_profile`
-* Header "Supervisory Organization" maps to JSON key `supervisor_organization` - This is the supervisor name with their Employee ID in parenthsis at the end
+* Header "Supervisory Organization" maps to JSON key `supervisor_organization` - This is the supervisor name with their Employee ID in parenthsis at the end, example `Peter Parker (EMP00001)`
 * Header "Current Hourly Rate" maps to JSON key `hourly_rate`
 * Header "Current Annual Salary" maps to JSON key `annual_salary`
 * Header "Location City, State" maps to JSON key `location`
