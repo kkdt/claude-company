@@ -395,6 +395,8 @@ def projects():
 
 @app.route("/projects/upload", methods=["POST"])
 def projects_upload():
+    if not session.get("logged_in"):
+        return redirect(url_for("login"))
     file = request.files.get("file")
     if not file or not file.filename.endswith(".csv"):
         flash("Please upload a CSV file.")
@@ -402,6 +404,21 @@ def projects_upload():
     parsed = parse_projects_csv(file)
     save_projects(parsed)
     flash(f"Successfully imported {len(parsed)} project(s).")
+    return redirect(url_for("projects"))
+
+
+@app.route("/projects/import-example", methods=["POST"])
+def projects_import_example():
+    if not session.get("logged_in"):
+        return redirect(url_for("login"))
+    example_path = os.path.join(os.path.dirname(__file__), "projects.csv")
+    if not os.path.exists(example_path):
+        flash("Example file not found.")
+        return redirect(url_for("projects"))
+    with open(example_path, "rb") as f:
+        parsed = parse_projects_csv(f)
+    save_projects(parsed)
+    flash(f"Successfully imported {len(parsed)} project(s) from the example file.")
     return redirect(url_for("projects"))
 
 

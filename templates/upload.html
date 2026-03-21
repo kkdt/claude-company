@@ -16,11 +16,6 @@
     padding: 0.65rem 1.5rem; font-size: 1rem; cursor: pointer; margin-top: 1rem;
   }
   .btn-primary:hover { background: #255480; }
-  .btn-example {
-    background: none; color: #1a3a5c; border: 1px solid #bcd; border-radius: 5px;
-    padding: 0.65rem 1.5rem; font-size: 1rem; cursor: pointer; margin-top: 1rem; margin-left: 0.75rem;
-  }
-  .btn-example:hover { background: #eef3f9; }
   .error-msg { color: #b00; font-size: 0.875rem; margin-top: 0.5rem; }
   .spinner { display: none; font-size: 0.85rem; color: #666; margin-top: 0.75rem; }
 
@@ -121,7 +116,7 @@
     <div class="error-msg" id="error-msg"></div>
   </form>
   <form action="{{ url_for('import_example') }}" method="post" style="display:inline;">
-    <button type="submit" class="btn-example">Import Example</button>
+    <button type="submit" class="btn-example" style="margin-top:1rem;margin-left:0.75rem;">Import Example</button>
   </form>
 
   <details class="schema-details">

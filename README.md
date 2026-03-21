@@ -245,10 +245,17 @@ podman run --rm \
 1. Analyze CLAUDE.md
 2. Fix install.sh stalling at "Installation Paths" prompt — added user instruction before the first read
 3. Fix install.ps1 for the same issue — added the same instruction text
-4. Fix install.sh prompts not showing — echo -ne was captured by $(...), redirected to >&2
-5. Confirm install.ps1 was not affected by the same issue (it wasn't)
-6. Build the venv at the installation directory — already correct, no change needed
-7. Fix install.sh failing with "pip is not available" — removed system pip pre-flight check, venv's bundled pip is sufficient
-8. Add CHALLENGE_WORD prompt to install.sh — hidden input (read -rs), confirmation, match check, saved to .challenge_word with chmod 600, launcher reads from file
-9. Update install.ps1 with the same changes — Read-Host -AsSecureString, confirmation loop, saved as hidden file, both launchers updated to read from file
-10. Create INSTALL.md — installation instructions for both platforms
+4. Fix install.sh prompts not showing — echo -ne captured by `$(...)`, redirected to `>&2`
+5. Confirm install.ps1 was not affected by the same issue
+6. Confirm venv builds at installation directory — already correct, no change needed
+7. Fix install.sh failing with "pip is not available" — removed system pip pre-flight check
+8. Add CHALLENGE_WORD prompt to install.sh — hidden input, confirmation, match check, saved to .challenge_word with chmod 600, launcher reads from file
+9. Update install.ps1 with the same changes — Read-Host -AsSecureString, confirmation loop, hidden file, both launchers updated
+10. Show challenge word storage path in install.sh Summary
+11. Update install.ps1 with the same changes as install.sh
+12. Create INSTALL.md — installation instructions for both platforms
+13. Make "Export to CSV" buttons consistent — added .btn-export to base.html, updated all 5 templates
+14. Confirm systemd service already defaults to No — no change needed
+15. Add "Import Example" button to Projects screen — new route projects_import_example in app.py, btn-secondary button in projects.html
+16. Restrict projects_import_example (and projects_upload) to authenticated sessions — explicit session.get("logged_in") check added to both routes
+17. Make "Import Example" buttons consistent — added .btn-example to base.html, updated projects.html to use it, removed local definition from upload.html

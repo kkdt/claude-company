@@ -99,6 +99,9 @@
       <button type="submit" class="btn-primary">Import</button>
     </div>
   </form>
+  <form method="post" action="{{ url_for('projects_import_example') }}" style="margin-top:0.6rem;">
+    <button type="submit" class="btn-example">Import Example</button>
+  </form>
   <details>
     <summary>CSV Schema Reference</summary>
     <table class="schema-table">
