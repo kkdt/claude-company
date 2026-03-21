@@ -91,6 +91,26 @@
     cursor: pointer; line-height: 1; padding: 0 0.25rem;
   }
   .render-close:hover { color: #fff; }
+  .zoom-controls { display: flex; align-items: center; gap: 0.25rem; }
+  .btn-zoom {
+    padding: 0.15rem 0.5rem; font-size: 0.85rem; background: #333; color: #ccc;
+    border: 1px solid #555; border-radius: 4px; cursor: pointer; line-height: 1.2;
+  }
+  .btn-zoom:hover { background: #444; color: #fff; }
+  .zoom-label { font-size: 0.75rem; color: #888; font-family: monospace; min-width: 3rem; text-align: center; }
+  .btn-print-render {
+    padding: 0.25rem 0.75rem; font-size: 0.8rem; background: #333; color: #ccc;
+    border: 1px solid #555; border-radius: 4px; cursor: pointer;
+  }
+  .btn-print-render:hover { background: #444; color: #fff; }
+  @media print {
+    body > *:not(#print-frame) { display: none !important; }
+    #print-frame {
+      display: block !important; position: static; margin: 0; padding: 1rem;
+      background: #fff; color: #000; font-family: 'Courier New', Courier, monospace;
+      white-space: pre; line-height: 1.5;
+    }
+  }
   .render-body { overflow-y: auto; padding: 1.25rem 1.5rem; flex: 1; }
   .render-body pre {
     font-family: 'Courier New', Courier, monospace; font-size: 0.82rem;
@@ -154,7 +174,15 @@
   <div class="render-modal">
     <div class="render-modal-header">
       <span>org chart — terminal tree</span>
-      <button class="render-close" onclick="closeRender()" aria-label="Close">&#x2715;</button>
+      <div style="display:flex;align-items:center;gap:0.75rem;">
+        <div class="zoom-controls">
+          <button class="btn-zoom" onclick="adjustZoom(-1)" title="Zoom out">&#8722;</button>
+          <span class="zoom-label" id="zoom-label">100%</span>
+          <button class="btn-zoom" onclick="adjustZoom(1)" title="Zoom in">&#43;</button>
+        </div>
+        <button class="btn-print-render" onclick="printRender()">Print</button>
+        <button class="render-close" onclick="closeRender()" aria-label="Close">&#x2715;</button>
+      </div>
     </div>
     <div class="render-body">
       <pre id="render-output"></pre>
@@ -193,16 +221,58 @@
     return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
   }
 
+  const ZOOM_STEPS = [50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150];
+  const ZOOM_DEFAULT_IDX = 5; // 100%
+  let zoomIdx = ZOOM_DEFAULT_IDX;
+
+  function applyZoom() {
+    const pct = ZOOM_STEPS[zoomIdx];
+    document.getElementById('render-output').style.fontSize = (pct * 0.0082) + 'rem';
+    document.getElementById('zoom-label').textContent = pct + '%';
+  }
+
+  function adjustZoom(delta) {
+    zoomIdx = Math.max(0, Math.min(ZOOM_STEPS.length - 1, zoomIdx + delta));
+    applyZoom();
+  }
+
   function openRender() {
     const rootItems = Array.from(document.querySelectorAll('#tree-root > .node-item'));
     const html = renderTreeHTML(rootItems.map(buildTreeData), '');
     document.getElementById('render-output').innerHTML = html;
+    zoomIdx = ZOOM_DEFAULT_IDX;
+    applyZoom();
     document.getElementById('render-backdrop').classList.add('open');
     document.addEventListener('keydown', renderEscListener);
   }
   function closeRender() {
     document.getElementById('render-backdrop').classList.remove('open');
     document.removeEventListener('keydown', renderEscListener);
+  }
+
+  function renderTreeText(nodes, prefix) {
+    let out = '';
+    nodes.forEach((node, i) => {
+      const last     = i === nodes.length - 1;
+      const connector = last ? '\u2514\u2500\u2500 ' : '\u251c\u2500\u2500 ';
+      const childPfx  = last ? '    ' : '\u2502   ';
+      out += prefix + connector + node.empName + (node.meta ? '  ' + node.meta : '') + '\n';
+      if (node.children.length) out += renderTreeText(node.children, prefix + childPfx);
+    });
+    return out;
+  }
+
+  function printRender() {
+    const rootItems = Array.from(document.querySelectorAll('#tree-root > .node-item'));
+    const text = renderTreeText(rootItems.map(buildTreeData), '');
+    const printPt = (ZOOM_STEPS[zoomIdx] / 100 * 11).toFixed(1);
+    const frame = document.createElement('div');
+    frame.id = 'print-frame';
+    frame.style.cssText = `display:none;font-size:${printPt}pt`;
+    frame.textContent = 'Organization Chart\n\n' + text;
+    document.body.appendChild(frame);
+    window.print();
+    document.body.removeChild(frame);
   }
   function closeRenderOnBackdrop(e) {
     if (e.target === document.getElementById('render-backdrop')) closeRender();

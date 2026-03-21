@@ -331,6 +331,10 @@ def organization_export():
         removals = set(json.loads(request.form.get("removals", "[]")))
     except Exception:
         removals = set()
+    try:
+        edits = json.loads(request.form.get("edits", "{}"))
+    except Exception:
+        edits = {}
 
     employees = [e for e in load_employees() if e["employee_id"] not in removals]
     emp_map = {e["employee_id"]: e for e in employees}
@@ -345,6 +349,13 @@ def organization_export():
             export_map[emp_id]["supervisor_organization"] = f"{new_sup['employee_name']} ({new_sup_id})"
         else:
             export_map[emp_id]["supervisor_organization"] = ""
+
+    for emp_id, changes in edits.items():
+        if emp_id not in export_map:
+            continue
+        for field in ("job_profile", "annual_salary"):
+            if field in changes and changes[field]:
+                export_map[emp_id][field] = changes[field]
 
     attr_keys, seen = [], set()
     for emp in export_employees:

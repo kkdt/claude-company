@@ -269,3 +269,22 @@ podman run --rm \
 16. Restrict projects_import_example (and projects_upload) to authenticated sessions — explicit session.get("logged_in") check added to both routes
 17. Make "Import Example" buttons consistent — added .btn-example to base.html, updated projects.html to use it, removed local definition from upload.html
 18. Add table of contents to INSTALL.md
+
+(New Claude Session) - Update Organization, Render feature
+
+1. Analyze CLAUDE.md
+2. Render button shows move details — When employees are moved, the Render modal displays "previously reported to: [old supervisor]" under the moved employee in the terminal tree.
+3. Add Print to Render popup — Added a Print button to the Organization Render modal; prints plain-text tree respecting current zoom level.
+4. Allow Salary and Job Profile editing from Organization screen — Added inline pencil (✏) edit buttons next to Job Profile and Annual Salary on each employee card; tracks edits in a pending changes panel with undo; included in CSV export.
+5. Pencil not showing up — Fixed: darkened .btn-field-edit color from `#ccc` to `#999` (was invisible on white background).
+6. Reset All clears Pending Changes — Fixed: added .slice() to prevent mutation-during-iteration bugs and added explicit updatePanel() call at the end of resetAll.
+7. Reset All not resetting tree nor clearing Pending Changes — Fixed: undoMove was throwing NotFoundError when origNext was itself a moved node no longer in origParent; guarded with origNext?.parentElement === origParent check.
+8. Do not render pencil in terminal tree output — buildTreeData now clones the .emp-meta node and strips `<button>` elements before reading textContent.
+9. Do not render Employee ID in terminal tree output — buildTreeData now reads directly from `.field-val[data-field="job_profile"]` instead of the whole .emp-meta span.
+10. Format salary as currency when editing — Added formatCurrency() JS helper; salary input shows plain number; display shows formatted $X,XXX.XX after commit; undo restores original formatted display.
+11. Disable salary edit when Show Salary is not active — Salary pencil buttons are hidden/disabled on page load and toggled with the Show Salary button.
+12. Include edited details in Render — Render modal shows `[edited]` tag and detail lines for changed fields (e.g., Job Profile: "old" → "new").
+13. Include old salary and old job profile in Render details — Edit details now show both old and new values: "old value" → "new value".
+14. Zoom in/out on Render popup — Added − / 100% / + zoom controls to the Organization Render modal (50%–150%); zoom resets on open; print respects zoom level.
+15. Add zoom in/out to Public Organization Render popup — Same zoom controls added to the public-facing Render modal.
+16. Add Print to Public Organization Render popup — Added Print button with renderTreeText and printRender functions, zoom-aware print sizing.

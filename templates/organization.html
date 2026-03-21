@@ -15,11 +15,14 @@
         <span class="emp-name">
           <a href="{{ url_for('employee_detail', employee_id=emp.employee_id) }}">{{ emp.employee_name }}</a>
         </span>
-        <span class="emp-meta">{{ emp.employee_id }} &mdash; {{ emp.job_profile }}</span>
+        <span class="emp-meta">{{ emp.employee_id }} &mdash;
+          <span class="field-val" data-field="job_profile" data-raw="{{ emp.job_profile | e }}">{{ emp.job_profile }}</span><button class="btn-field-edit" title="Edit job profile" onclick="event.stopPropagation();startEdit(this,'job_profile')">&#9998;</button></span>
         {% if emp.location %}<span class="emp-meta">{{ emp.location }}</span>{% endif %}
-        {% if emp.annual_salary %}<span class="emp-meta salary-value">{{ emp.annual_salary | currency }}</span>{% endif %}
+        {% if emp.annual_salary %}<span class="emp-meta salary-value">
+          <span class="field-val" data-field="annual_salary" data-raw="{{ emp.annual_salary | e }}">{{ emp.annual_salary | currency }}</span><button class="btn-field-edit" title="Edit salary" onclick="event.stopPropagation();startEdit(this,'annual_salary')">&#9998;</button></span>{% endif %}
       </div>
       <span class="moved-badge" style="display:none">moved</span>
+      <span class="edited-badge" style="display:none">edited</span>
       {% if children %}
       <span class="report-badge">{{ children|length }} direct report{{ 's' if children|length != 1 }}</span>
       {% endif %}
@@ -79,6 +82,19 @@
   .moved-badge {
     font-size: 0.7rem; background: #fff3cc; color: #6b4c00; border: 1px solid #e6c96a;
     border-radius: 10px; padding: 0.1rem 0.5rem; white-space: nowrap; flex-shrink: 0;
+  }
+  .edited-badge {
+    font-size: 0.7rem; background: #e8f4fd; color: #0a5a8a; border: 1px solid #90cce8;
+    border-radius: 10px; padding: 0.1rem 0.5rem; white-space: nowrap; flex-shrink: 0;
+  }
+  .btn-field-edit {
+    background: none; border: none; color: #999; font-size: 0.72rem;
+    cursor: pointer; padding: 0 0.2rem; line-height: 1; vertical-align: middle;
+  }
+  .btn-field-edit:hover { color: #1a3a5c; }
+  .field-edit-input {
+    font-size: 0.78rem; padding: 0.1rem 0.3rem; border: 1px solid #90b8d8;
+    border-radius: 3px; color: #1a3a5c; width: 13rem; margin: 0 0.1rem;
   }
   .report-badge {
     font-size: 0.75rem; background: #e8f0f8; color: #1a3a5c;
@@ -162,6 +178,26 @@
     cursor: pointer; line-height: 1; padding: 0 0.25rem;
   }
   .render-close:hover { color: #fff; }
+  .btn-print-render {
+    padding: 0.25rem 0.75rem; font-size: 0.8rem; background: #333; color: #ccc;
+    border: 1px solid #555; border-radius: 4px; cursor: pointer;
+  }
+  .btn-print-render:hover { background: #444; color: #fff; }
+  .zoom-controls { display: flex; align-items: center; gap: 0.25rem; }
+  .btn-zoom {
+    padding: 0.15rem 0.5rem; font-size: 0.85rem; background: #333; color: #ccc;
+    border: 1px solid #555; border-radius: 4px; cursor: pointer; line-height: 1.2;
+  }
+  .btn-zoom:hover { background: #444; color: #fff; }
+  .zoom-label { font-size: 0.75rem; color: #888; font-family: monospace; min-width: 3rem; text-align: center; }
+  @media print {
+    body > *:not(#print-frame) { display: none !important; }
+    #print-frame {
+      display: block !important; position: static; margin: 0; padding: 1rem;
+      background: #fff; color: #000; font-family: 'Courier New', Courier, monospace;
+      white-space: pre; line-height: 1.5;
+    }
+  }
   .render-body {
     overflow-y: auto; padding: 1.25rem 1.5rem; flex: 1;
   }
@@ -171,6 +207,8 @@
   }
   .render-body pre .node-name { color: #9cdcfe; }
   .render-body pre .node-meta { color: #6a9955; }
+  .render-body pre .node-moved { color: #e6c96a; }
+  .render-body pre .node-move-detail { color: #888; }
   .btn-render {
     padding: 0.35rem 0.9rem; font-size: 0.85rem; background: #444; color: #fff;
     border: 1px solid #666; border-radius: 4px; cursor: pointer; white-space: nowrap;
@@ -207,6 +245,7 @@
     <form id="export-form" action="{{ url_for('organization_export') }}" method="post" style="flex:1;display:flex;">
       <input type="hidden" id="moves-input" name="moves" value="{}">
       <input type="hidden" id="removals-input" name="removals" value="[]">
+      <input type="hidden" id="edits-input" name="edits" value="{}">
       <button type="submit" class="btn-export-org">Export CSV</button>
     </form>
     <button class="btn-reset" onclick="resetAll()">Reset All</button>
@@ -216,7 +255,118 @@
 <script>
   const pendingMoves = {};
   const pendingRemovals = {};   // { empId: { empName, li } }
+  const pendingEdits = {};      // { empId: { job_profile: newVal, annual_salary: newVal } }
+  const pendingEditOrig = {};   // { empId: { field: origVal } } — for undo display
   let dragSrcLi = null;
+
+  function formatCurrency(val) {
+    const n = parseFloat(String(val).replace(/[$,]/g, ''));
+    if (isNaN(n)) return val;
+    return '$' + n.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  }
+
+  // ── Inline field editing ───────────────────────────────────────────────────
+  function startEdit(btn, field) {
+    const li = btn.closest('.node-item');
+    const empId = li.dataset.empId;
+    const valSpan = btn.previousElementSibling;
+    const raw = valSpan.dataset.raw;
+    const current = pendingEdits[empId]?.[field] ?? raw;
+
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.className = 'field-edit-input';
+    // For salary, strip formatting so the user edits a plain number
+    input.value = field === 'annual_salary' ? String(current).replace(/[$,]/g, '') : current;
+
+    const parent = btn.parentElement;
+    parent.insertBefore(input, valSpan);
+    valSpan.style.display = 'none';
+    btn.style.display = 'none';
+    input.focus();
+    input.select();
+
+    let committed = false;
+
+    function commit() {
+      if (committed) return;
+      committed = true;
+      commitEdit(li, empId, field, input.value.trim());
+      parent.removeChild(input);
+      valSpan.style.display = '';
+      btn.style.display = '';
+    }
+
+    function cancel() {
+      if (committed) return;
+      committed = true;
+      parent.removeChild(input);
+      valSpan.style.display = '';
+      btn.style.display = '';
+    }
+
+    input.addEventListener('keydown', e => {
+      if (e.key === 'Enter')  { e.preventDefault(); e.stopPropagation(); commit(); }
+      if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); cancel(); }
+      else e.stopPropagation();
+    });
+    input.addEventListener('blur', commit);
+  }
+
+  function commitEdit(li, empId, field, newVal) {
+    const valSpan = li.querySelector(`.field-val[data-field="${field}"]`);
+
+    // Capture original display text on the very first edit of this field
+    if (!pendingEditOrig[empId])           pendingEditOrig[empId] = {};
+    if (!(field in pendingEditOrig[empId])) pendingEditOrig[empId][field] = valSpan.textContent;
+
+    const origDisplay = pendingEditOrig[empId][field];
+    const cleanNew = String(newVal).replace(/[$,]/g, '');
+    const cleanOrig = String(valSpan.dataset.raw).replace(/[$,]/g, '');
+    const unchanged = cleanNew === '' || cleanNew === cleanOrig;
+
+    if (unchanged) {
+      delete pendingEditOrig[empId][field];
+      if (!Object.keys(pendingEditOrig[empId]).length) delete pendingEditOrig[empId];
+      if (pendingEdits[empId]) {
+        delete pendingEdits[empId][field];
+        if (!Object.keys(pendingEdits[empId]).length) delete pendingEdits[empId];
+      }
+      valSpan.textContent = origDisplay;
+    } else {
+      if (!pendingEdits[empId]) pendingEdits[empId] = {};
+      pendingEdits[empId][field] = cleanNew;
+      valSpan.textContent = field === 'annual_salary' ? formatCurrency(cleanNew) : newVal;
+    }
+
+    // Show/hide edited-badge
+    const badge = li.querySelector('.edited-badge');
+    if (badge) badge.style.display = pendingEdits[empId] ? '' : 'none';
+
+    updatePanel();
+  }
+
+  function undoEdit(empId, field) {
+    const li = document.querySelector(`.node-item[data-emp-id="${empId}"]`);
+    const origDisplay = pendingEditOrig[empId]?.[field];
+    if (li && origDisplay !== undefined) {
+      const valSpan = li.querySelector(`.field-val[data-field="${field}"]`);
+      if (valSpan) valSpan.textContent = origDisplay;
+    }
+    if (pendingEdits[empId]) {
+      delete pendingEdits[empId][field];
+      if (Object.keys(pendingEdits[empId]).length === 0) delete pendingEdits[empId];
+    }
+    if (pendingEditOrig[empId]) {
+      delete pendingEditOrig[empId][field];
+      if (Object.keys(pendingEditOrig[empId]).length === 0) delete pendingEditOrig[empId];
+    }
+    if (li) {
+      const badge = li.querySelector('.edited-badge');
+      if (badge) badge.style.display = pendingEdits[empId] ? '' : 'none';
+    }
+    updatePanel();
+  }
 
   // ── Remove (client-side only) ──────────────────────────────────────────────
   function removeEmployee(empId, empName) {
@@ -320,8 +470,15 @@
 
     // Save original position for undo
     if (!pendingMoves[empId]) {
+      // Capture original supervisor from DOM before the move
+      const origParentList = srcLi.parentElement;
+      let origSupName = null;
+      if (origParentList.classList.contains('children-list')) {
+        const supLi = origParentList.parentElement?.parentElement;
+        origSupName = supLi?.dataset?.empName || null;
+      }
       pendingMoves[empId] = {
-        newSupId, newSupName, empName,
+        newSupId, newSupName, empName, origSupName,
         origParent: srcLi.parentElement,
         origNext: srcLi.nextElementSibling,
       };
@@ -345,7 +502,9 @@
     if (!m) return;
     const li = document.querySelector(`.node-item[data-emp-id="${empId}"]`);
     if (li) {
-      m.origParent.insertBefore(li, m.origNext);
+      // origNext may have been moved itself; only use it as reference if still in origParent
+      const refNode = m.origNext?.parentElement === m.origParent ? m.origNext : null;
+      m.origParent.insertBefore(li, refNode);
       li.querySelector('.moved-badge').style.display = 'none';
     }
     delete pendingMoves[empId];
@@ -353,15 +512,23 @@
   }
 
   function resetAll() {
-    Object.keys(pendingMoves).forEach(undoMove);
-    Object.keys(pendingRemovals).forEach(undoRemoval);
+    Object.keys(pendingMoves).slice().forEach(undoMove);
+    Object.keys(pendingRemovals).slice().forEach(undoRemoval);
+    Object.keys(pendingEdits).slice().forEach(empId =>
+      Object.keys(pendingEdits[empId]).slice().forEach(field => undoEdit(empId, field))
+    );
+    updatePanel();
   }
 
   // ── Panel ─────────────────────────────────────────────────────────────────
   function updatePanel() {
     const moveKeys   = Object.keys(pendingMoves);
     const removeKeys = Object.keys(pendingRemovals);
-    const total = moveKeys.length + removeKeys.length + removeKeys.reduce((s, id) => s + pendingRemovals[id].descendantIds.length, 0);
+    const editKeys   = Object.keys(pendingEdits);
+    const editFieldCount = editKeys.reduce((s, id) => s + Object.keys(pendingEdits[id]).length, 0);
+    const total = moveKeys.length + removeKeys.length
+                + removeKeys.reduce((s, id) => s + pendingRemovals[id].descendantIds.length, 0)
+                + editFieldCount;
     const panel = document.getElementById('pending-panel');
     panel.style.display = total ? 'block' : 'none';
     document.getElementById('pending-count').textContent = total;
@@ -381,7 +548,19 @@
         <button class="undo-btn" onclick="undoRemoval('${empId}')">undo</button>
       </li>`;
     });
-    document.getElementById('pending-list').innerHTML = [...moveItems, ...removeItems].join('');
+    const fieldLabels = { job_profile: 'Job Profile', annual_salary: 'Salary' };
+    const editItems = [];
+    editKeys.forEach(empId => {
+      const empName = document.querySelector(`.node-item[data-emp-id="${empId}"]`)?.dataset?.empName || empId;
+      Object.keys(pendingEdits[empId]).forEach(field => {
+        const label = fieldLabels[field] || field;
+        editItems.push(`<li>
+          <span>&#9998; <strong>${esc(empName)}</strong> — ${label}: &ldquo;${esc(pendingEdits[empId][field])}&rdquo;</span>
+          <button class="undo-btn" onclick="undoEdit('${empId}','${field}')">undo</button>
+        </li>`);
+      });
+    });
+    document.getElementById('pending-list').innerHTML = [...moveItems, ...removeItems, ...editItems].join('');
 
     const movesObj = {};
     moveKeys.forEach(id => movesObj[id] = pendingMoves[id].newSupId);
@@ -394,6 +573,7 @@
       allRemovedIds.push(...pendingRemovals[id].descendantIds);
     });
     document.getElementById('removals-input').value = JSON.stringify(allRemovedIds);
+    document.getElementById('edits-input').value = JSON.stringify(pendingEdits);
   }
 
   function esc(s) {
@@ -420,10 +600,15 @@
   function toggleSalary(btn) {
     const reveal = btn.classList.toggle('active');
     document.querySelectorAll('.salary-value').forEach(el => el.classList.toggle('revealed', reveal));
+    document.querySelectorAll('.field-val[data-field="annual_salary"] + .btn-field-edit')
+      .forEach(b => { b.disabled = !reveal; b.style.visibility = reveal ? '' : 'hidden'; });
     btn.textContent = reveal ? 'Hide Salary' : 'Show Salary';
   }
 
   initDrag();
+  // Salary edit disabled until Show Salary is toggled on
+  document.querySelectorAll('.field-val[data-field="annual_salary"] + .btn-field-edit')
+    .forEach(b => { b.disabled = true; b.style.visibility = 'hidden'; });
 </script>
 
 <!-- Render modal -->
@@ -431,7 +616,15 @@
   <div class="render-modal">
     <div class="render-modal-header">
       <span>org chart — terminal tree</span>
-      <button class="render-close" onclick="closeRender()" aria-label="Close">&#x2715;</button>
+      <div style="display:flex;align-items:center;gap:0.75rem;">
+        <div class="zoom-controls">
+          <button class="btn-zoom" onclick="adjustZoom(-1)" title="Zoom out">&#8722;</button>
+          <span class="zoom-label" id="zoom-label">100%</span>
+          <button class="btn-zoom" onclick="adjustZoom(1)" title="Zoom in">&#43;</button>
+        </div>
+        <button class="btn-print-render" onclick="printRender()">Print</button>
+        <button class="render-close" onclick="closeRender()" aria-label="Close">&#x2715;</button>
+      </div>
     </div>
     <div class="render-body">
       <pre id="render-output"></pre>
@@ -445,15 +638,19 @@
   function buildTreeData(li) {
     const empId   = li.dataset.empId;
     const empName = li.dataset.empName;
-    // job profile is in .emp-meta (first one)
-    const metas   = li.querySelectorAll(':scope > .emp-card > .emp-card-header .emp-meta');
-    const meta    = metas.length ? metas[0].textContent.trim() : '';
+    // job profile via field-val span (excludes employee ID and edit button)
+    const jpSpan = li.querySelector(':scope > .emp-card > .emp-card-header .field-val[data-field="job_profile"]');
+    const meta = jpSpan ? jpSpan.textContent.trim() : '';
     // children: direct .node-item descendants inside the immediate .children-list
     const childList = li.querySelector(':scope > .emp-card > .children-list');
     const children  = childList
       ? Array.from(childList.querySelectorAll(':scope > .node-item:not(.removed)')).map(buildTreeData)
       : [];
-    return { empId, empName, meta, children };
+    const moveInfo = pendingMoves[empId] || null;
+    const editInfo = pendingEdits[empId]
+      ? { fields: Object.assign({}, pendingEdits[empId]), orig: Object.assign({}, pendingEditOrig[empId] || {}) }
+      : null;
+    return { empId, empName, meta, children, moveInfo, editInfo };
   }
 
   function renderTree(nodes, prefix, isLast) {
@@ -482,7 +679,29 @@
       const childPfx  = last ? '    ' : '│   ';
       const nameHtml  = `<span class="node-name">${esc(node.empName)}</span>`;
       const metaHtml  = node.meta ? `  <span class="node-meta">${esc(node.meta)}</span>` : '';
-      out += esc(prefix) + connector + nameHtml + metaHtml + '\n';
+      const movedTag  = node.moveInfo ? `  <span class="node-moved">[moved]</span>` : '';
+      const editedTag = node.editInfo  ? `  <span class="node-moved">[edited]</span>` : '';
+      out += esc(prefix) + connector + nameHtml + metaHtml + movedTag + editedTag + '\n';
+      const details = [];
+      if (node.moveInfo) {
+        const from = node.moveInfo.origSupName ? esc(node.moveInfo.origSupName) : '(no supervisor)';
+        details.push(`<span class="node-move-detail">previously reported to: ${from}</span>`);
+      }
+      if (node.editInfo) {
+        const labels = { job_profile: 'Job Profile', annual_salary: 'Salary' };
+        Object.keys(node.editInfo.fields).forEach(f => {
+          const label = labels[f] || f;
+          const fmt = v => f === 'annual_salary' ? esc(formatCurrency(v)) : esc(v);
+          const oldVal = fmt(node.editInfo.orig[f] || '');
+          const newVal = fmt(node.editInfo.fields[f]);
+          details.push(`<span class="node-move-detail">${label}: &ldquo;${oldVal}&rdquo; &rarr; &ldquo;${newVal}&rdquo;</span>`);
+        });
+      }
+      details.forEach((detail, di) => {
+        const isLastDetail = di === details.length - 1 && !node.children.length;
+        const dc = isLastDetail ? '└── ' : '├── ';
+        out += esc(prefix + childPfx) + dc + detail + '\n';
+      });
       if (node.children.length) {
         out += renderTreeHTML(node.children, prefix + childPfx);
       }
@@ -494,6 +713,21 @@
     return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
   }
 
+  const ZOOM_STEPS = [50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150];
+  const ZOOM_DEFAULT_IDX = 5; // 100%
+  let zoomIdx = ZOOM_DEFAULT_IDX;
+
+  function applyZoom() {
+    const pct = ZOOM_STEPS[zoomIdx];
+    document.getElementById('render-output').style.fontSize = (pct * 0.0082) + 'rem';
+    document.getElementById('zoom-label').textContent = pct + '%';
+  }
+
+  function adjustZoom(delta) {
+    zoomIdx = Math.max(0, Math.min(ZOOM_STEPS.length - 1, zoomIdx + delta));
+    applyZoom();
+  }
+
   function openRender() {
     const rootItems = Array.from(
       document.querySelectorAll('#tree-root > .node-item:not(.removed)')
@@ -501,6 +735,8 @@
     const treeData = rootItems.map(buildTreeData);
     const html = renderTreeHTML(treeData, '');
     document.getElementById('render-output').innerHTML = html;
+    zoomIdx = ZOOM_DEFAULT_IDX;
+    applyZoom();
     document.getElementById('render-backdrop').classList.add('open');
     document.addEventListener('keydown', renderEscListener);
   }
@@ -508,6 +744,58 @@
   function closeRender() {
     document.getElementById('render-backdrop').classList.remove('open');
     document.removeEventListener('keydown', renderEscListener);
+  }
+
+  function printRender() {
+    // Build plain-text version (no HTML spans) for print
+    const rootItems = Array.from(
+      document.querySelectorAll('#tree-root > .node-item:not(.removed)')
+    );
+    const treeData = rootItems.map(buildTreeData);
+    const text = renderTreeText(treeData, '');
+
+    const printPt = (ZOOM_STEPS[zoomIdx] / 100 * 11).toFixed(1);
+    const frame = document.createElement('div');
+    frame.id = 'print-frame';
+    frame.style.cssText = `display:none;font-size:${printPt}pt`;
+    frame.textContent = 'Organization Chart\n\n' + text;
+    document.body.appendChild(frame);
+    window.print();
+    document.body.removeChild(frame);
+  }
+
+  function renderTreeText(nodes, prefix) {
+    let out = '';
+    nodes.forEach((node, i) => {
+      const last      = i === nodes.length - 1;
+      const connector = last ? '\u2514\u2500\u2500 ' : '\u251c\u2500\u2500 ';
+      const childPfx  = last ? '    ' : '\u2502   ';
+      const tags = (node.moveInfo ? '  [moved]' : '') + (node.editInfo ? '  [edited]' : '');
+      out += prefix + connector + node.empName + (node.meta ? '  ' + node.meta : '') + tags + '\n';
+      const details = [];
+      if (node.moveInfo) {
+        details.push('previously reported to: ' + (node.moveInfo.origSupName || '(no supervisor)'));
+      }
+      if (node.editInfo) {
+        const labels = { job_profile: 'Job Profile', annual_salary: 'Salary' };
+        Object.keys(node.editInfo.fields).forEach(f => {
+          const label = labels[f] || f;
+          const fmt = v => f === 'annual_salary' ? formatCurrency(v) : v;
+          const oldVal = fmt(node.editInfo.orig[f] || '');
+          const newVal = fmt(node.editInfo.fields[f]);
+          details.push(label + ': \u201c' + oldVal + '\u201d \u2192 \u201c' + newVal + '\u201d');
+        });
+      }
+      details.forEach((detail, di) => {
+        const isLastDetail = di === details.length - 1 && !node.children.length;
+        const dc = isLastDetail ? '\u2514\u2500\u2500 ' : '\u251c\u2500\u2500 ';
+        out += prefix + childPfx + dc + detail + '\n';
+      });
+      if (node.children.length) {
+        out += renderTreeText(node.children, prefix + childPfx);
+      }
+    });
+    return out;
   }
 
   function closeRenderOnBackdrop(e) {

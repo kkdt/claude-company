@@ -10,6 +10,7 @@ COPY app.py .
 COPY templates/ templates/
 COPY static/ static/
 COPY employees.csv .
+COPY projects.csv .
 
 RUN mkdir -p data
 
