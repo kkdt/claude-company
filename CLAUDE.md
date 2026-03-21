@@ -39,7 +39,7 @@ All other CSV headers maps to a JSON key `attributes` that is a JSON list of tup
 All screens require a challenge-word login to access except for the "Public" navigation screens. The Public screens are read-only data without
 sensitive information such as hourly rate and salary data.
 
-1. Upload employee CSV file
+1. Upload employee CSV file (all CSV exports will be wrapped in double-quoted)
 
 2. View all employees
 
@@ -55,8 +55,12 @@ sensitive information such as hourly rate and salary data.
     - An employee can support multiple projects in a single month
     - Screens to project staffing assignments for future months while preserving past assignments in JSON format
 
-7. Public - Public view 
+7. Public - Public view that includes read-only to Organization, Projects, and Staffing Projections; will be hidden when the user logs with the challenge word.
 
 ## Application Deployment
 
 The application will run on port 8080.
+
+## Installation Instructions for Windows and Linux / Unix
+
+@INSTALL.md
