@@ -32,7 +32,7 @@ prompt_with_default() {
     local prompt="$1"
     local default="$2"
     local value
-    echo -ne "${BOLD}${prompt}${RESET} [${default}]: "
+    echo -ne "${BOLD}${prompt}${RESET} [${default}]: " >&2
     read -r value
     echo "${value:-$default}"
 }
@@ -48,6 +48,8 @@ confirm() {
 # ── Gather installation paths ────────────────────────────────────────────────
 echo -e "${BOLD}Installation Paths${RESET}"
 echo "──────────────────────────────────────────"
+echo -e "Press ${BOLD}Enter${RESET} to accept each default, or type a custom path."
+echo
 
 INSTALL_DIR="$(prompt_with_default "Installation directory" "${HOME}/claude-company")"
 DATA_DIR="$(prompt_with_default "Data directory" "${HOME}/claude-company/data")"
@@ -57,10 +59,34 @@ INSTALL_DIR="${INSTALL_DIR/#\~/$HOME}"
 DATA_DIR="${DATA_DIR/#\~/$HOME}"
 
 echo
+echo -e "${BOLD}Security${RESET}"
+echo "──────────────────────────────────────────"
+echo -e "The challenge word is required to log in to the application."
+echo
+while true; do
+    echo -ne "${BOLD}Challenge word${RESET}: " >&2
+    read -rs CHALLENGE_WORD
+    echo >&2
+    if [[ -z "${CHALLENGE_WORD}" ]]; then
+        echo -e "${YELLOW}Challenge word cannot be empty.${RESET}" >&2
+        continue
+    fi
+    echo -ne "${BOLD}Confirm challenge word${RESET}: " >&2
+    read -rs CHALLENGE_WORD_CONFIRM
+    echo >&2
+    if [[ "${CHALLENGE_WORD}" != "${CHALLENGE_WORD_CONFIRM}" ]]; then
+        echo -e "${YELLOW}Challenge words do not match. Try again.${RESET}" >&2
+        continue
+    fi
+    break
+done
+
+echo
 echo -e "${BOLD}Summary${RESET}"
 echo "──────────────────────────────────────────"
 echo -e "  Install directory : ${CYAN}${INSTALL_DIR}${RESET}"
 echo -e "  Data directory    : ${CYAN}${DATA_DIR}${RESET}"
+echo -e "  Challenge word    : ${CYAN}(set) — saved to ${INSTALL_DIR}/.challenge_word${RESET}"
 echo
 
 confirm "Proceed with installation?" || { echo "Aborted."; exit 0; }
@@ -80,16 +106,22 @@ if [[ "$PYTHON_MAJOR" -lt 3 ]] || { [[ "$PYTHON_MAJOR" -eq 3 ]] && [[ "$PYTHON_M
 fi
 success "Python ${PYTHON_VERSION} found."
 
-# Check pip / venv availability
-python3 -m pip --version >/dev/null 2>&1   || die "pip is not available. Install python3-pip."
-python3 -m venv --help   >/dev/null 2>&1   || die "venv module is not available. Install python3-venv."
-success "pip and venv are available."
+# Check venv availability (pip is bundled inside the venv via ensurepip)
+python3 -m venv --help >/dev/null 2>&1 || die "venv module is not available. Install python3-venv."
+success "venv is available."
 
 # ── Create directories ───────────────────────────────────────────────────────
 info "Creating directories..."
 mkdir -p "${INSTALL_DIR}"
 mkdir -p "${DATA_DIR}"
 success "Directories created."
+
+# ── Save challenge word ───────────────────────────────────────────────────────
+CHALLENGE_WORD_FILE="${INSTALL_DIR}/.challenge_word"
+info "Saving challenge word..."
+echo "${CHALLENGE_WORD}" > "${CHALLENGE_WORD_FILE}"
+chmod 600 "${CHALLENGE_WORD_FILE}"
+success "Challenge word saved to ${CHALLENGE_WORD_FILE}."
 
 # ── Copy application files ───────────────────────────────────────────────────
 info "Copying application files..."
@@ -178,10 +210,12 @@ cat > "${LAUNCHER}" <<'LAUNCHER_EOF'
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 VENV_PYTHON="${SCRIPT_DIR}/venv/bin/python"
 
-# Honour an optional CHALLENGE_WORD env var; warn if unset
-if [[ -z "${CHALLENGE_WORD:-}" ]]; then
-    echo "[WARN] CHALLENGE_WORD is not set. The login screen will accept any input."
-    echo "       Set it before starting: export CHALLENGE_WORD=your-secret"
+# Load challenge word from saved file, falling back to env var
+CHALLENGE_WORD_FILE="${SCRIPT_DIR}/.challenge_word"
+if [[ -f "${CHALLENGE_WORD_FILE}" ]]; then
+    export CHALLENGE_WORD="$(cat "${CHALLENGE_WORD_FILE}")"
+elif [[ -z "${CHALLENGE_WORD:-}" ]]; then
+    echo "[WARN] CHALLENGE_WORD is not set. Only PUBLIC functionality will be available."
 fi
 
 exec "${VENV_PYTHON}" "${SCRIPT_DIR}/app.py" "$@"
@@ -235,8 +269,8 @@ echo -e "  Data directory    : ${CYAN}${DATA_DIR}${RESET}"
 echo -e "  Launcher          : ${CYAN}${LAUNCHER}${RESET}"
 echo
 echo -e "${BOLD}To start the application:${RESET}"
-echo -e "  export CHALLENGE_WORD=your-secret"
 echo -e "  ${CYAN}${LAUNCHER}${RESET}"
+warn "The challenge word is a local, plain-text, hidden file. Please note its location and the keep it safe."
 echo
 echo -e "Then open ${CYAN}http://localhost:8080${RESET} in your browser."
 echo

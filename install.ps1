@@ -53,6 +53,8 @@ $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 # ── Gather paths ──────────────────────────────────────────────────────────────
 Write-Host "Installation Paths" -ForegroundColor White
 Write-Host "──────────────────────────────────────────"
+Write-Host "Press Enter to accept each default, or type a custom path."
+Write-Host ""
 
 $DefaultInstall = Join-Path $env:USERPROFILE "claude-company"
 $DefaultData    = Join-Path $env:USERPROFILE "claude-company\data"
@@ -61,10 +63,39 @@ $InstallDir = Prompt-WithDefault "Installation directory" $DefaultInstall
 $DataDir    = Prompt-WithDefault "Data directory"         $DefaultData
 
 Write-Host ""
+Write-Host "Security" -ForegroundColor White
+Write-Host "──────────────────────────────────────────"
+Write-Host "The challenge word is required to log in to the application."
+Write-Host ""
+
+$ChallengeWord = $null
+while ($true) {
+    $cw1 = Read-Host -Prompt "Challenge word" -AsSecureString
+    $cw1Plain = [Runtime.InteropServices.Marshal]::PtrToStringAuto(
+                    [Runtime.InteropServices.Marshal]::SecureStringToBSTR($cw1))
+    if ([string]::IsNullOrWhiteSpace($cw1Plain)) {
+        Write-Warn "Challenge word cannot be empty."
+        continue
+    }
+    $cw2 = Read-Host -Prompt "Confirm challenge word" -AsSecureString
+    $cw2Plain = [Runtime.InteropServices.Marshal]::PtrToStringAuto(
+                    [Runtime.InteropServices.Marshal]::SecureStringToBSTR($cw2))
+    if ($cw1Plain -ne $cw2Plain) {
+        Write-Warn "Challenge words do not match. Try again."
+        continue
+    }
+    $ChallengeWord = $cw1Plain
+    break
+}
+
+$ChallengeWordFile = Join-Path $InstallDir ".challenge_word"
+
+Write-Host ""
 Write-Host "Summary" -ForegroundColor White
 Write-Host "──────────────────────────────────────────"
 Write-Host "  Install directory : " -NoNewline; Write-Host $InstallDir -ForegroundColor Cyan
 Write-Host "  Data directory    : " -NoNewline; Write-Host $DataDir    -ForegroundColor Cyan
+Write-Host "  Challenge word    : " -NoNewline; Write-Host "(set) — saved to $ChallengeWordFile" -ForegroundColor Cyan
 Write-Host ""
 
 if (-not (Prompt-Confirm "Proceed with installation?")) {
@@ -106,6 +137,12 @@ Write-Info "Creating directories..."
 New-Item -ItemType Directory -Force -Path $InstallDir | Out-Null
 New-Item -ItemType Directory -Force -Path $DataDir    | Out-Null
 Write-Ok "Directories created."
+
+# ── Save challenge word ────────────────────────────────────────────────────────
+Write-Info "Saving challenge word..."
+Set-Content -Path $ChallengeWordFile -Value $ChallengeWord -Encoding UTF8 -NoNewline
+(Get-Item $ChallengeWordFile).Attributes = 'Hidden'
+Write-Ok "Challenge word saved to $ChallengeWordFile."
 
 # ── Copy application files ────────────────────────────────────────────────────
 Write-Info "Copying application files..."
@@ -201,10 +238,12 @@ setlocal
 
 set "SCRIPT_DIR=%~dp0"
 set "VENV_PYTHON=%SCRIPT_DIR%venv\Scripts\python.exe"
+set "CHALLENGE_WORD_FILE=%SCRIPT_DIR%.challenge_word"
 
-if "%CHALLENGE_WORD%"=="" (
-    echo [WARN] CHALLENGE_WORD is not set. The login screen will accept any input.
-    echo        Set it before starting: set CHALLENGE_WORD=your-secret
+if exist "%CHALLENGE_WORD_FILE%" (
+    set /p CHALLENGE_WORD=<"%CHALLENGE_WORD_FILE%"
+) else if "%CHALLENGE_WORD%"=="" (
+    echo [WARN] CHALLENGE_WORD is not set. Only PUBLIC functionality will be available.
 )
 
 "%VENV_PYTHON%" "%SCRIPT_DIR%app.py" %*
@@ -219,12 +258,14 @@ $LauncherPs1 = Join-Path $InstallDir "claude-company.ps1"
 
 $ps1Content = @"
 # claude-company.ps1 — start the Claude Company web application
-`$ScriptDir  = Split-Path -Parent `$MyInvocation.MyCommand.Path
-`$VenvPython = Join-Path `$ScriptDir "venv\Scripts\python.exe"
+`$ScriptDir         = Split-Path -Parent `$MyInvocation.MyCommand.Path
+`$VenvPython        = Join-Path `$ScriptDir "venv\Scripts\python.exe"
+`$ChallengeWordFile = Join-Path `$ScriptDir ".challenge_word"
 
-if (-not `$env:CHALLENGE_WORD) {
-    Write-Warning "CHALLENGE_WORD is not set. The login screen will accept any input."
-    Write-Warning "Set it before starting: `$env:CHALLENGE_WORD = 'your-secret'"
+if (Test-Path `$ChallengeWordFile) {
+    `$env:CHALLENGE_WORD = Get-Content `$ChallengeWordFile -Raw
+} elseif (-not `$env:CHALLENGE_WORD) {
+    Write-Warning "CHALLENGE_WORD is not set. Only PUBLIC functionality will be available."
 }
 
 & `$VenvPython (Join-Path `$ScriptDir "app.py") @args
@@ -255,13 +296,9 @@ Write-Host "  Install directory : " -NoNewline; Write-Host $InstallDir  -Foregro
 Write-Host "  Data directory    : " -NoNewline; Write-Host $DataDir     -ForegroundColor Cyan
 Write-Host "  Launcher (bat)    : " -NoNewline; Write-Host $LauncherBat -ForegroundColor Cyan
 Write-Host ""
-Write-Host "To start the application:"
-Write-Host "  1. Open a Command Prompt or PowerShell window"
-Write-Host "  2. Set your challenge word:"
-Write-Host "       set CHALLENGE_WORD=your-secret        (cmd)" -ForegroundColor Cyan
-Write-Host "       `$env:CHALLENGE_WORD = 'your-secret'   (PowerShell)" -ForegroundColor Cyan
-Write-Host "  3. Run the launcher:"
-Write-Host "       $LauncherBat" -ForegroundColor Cyan
+Write-Host "To start the application:" -ForegroundColor White
+Write-Host "  $LauncherBat" -ForegroundColor Cyan
+Write-Warn "The challenge word is a local, plain-text, hidden file. Please note its location and the keep it safe."
 Write-Host ""
 Write-Host "Then open http://localhost:8080 in your browser." -ForegroundColor White
 Write-Host ""

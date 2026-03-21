@@ -223,7 +223,7 @@ podman run --rm \
 12. Update the Export to CSV for Public Staffing Projections format to the same as exporting from the authenticated Staffing Projections — updated route to output Employee ID, Employee Name, Supervisor Organization, Job Profile + month columns, with multiple rows per employee for multiple project assignments per month.
 13. Update all "Export to CSV" to double-quote all entries — added quoting=csv.QUOTE_ALL to all four server-side csv.DictWriter/csv.writer calls; client-side JS export was already quoting all fields.
 
-(New Claude Session)
+(New Claude Session) - Add install process and single-file executable build proces
 
 1. Analyze CLAUDE.md
 2. Create Linux/Unix installer — prompts for install location (default `$HOME/claude-company`) and data directory (default `$HOME/claude-company/data`)
@@ -239,3 +239,15 @@ podman run --rm \
 12. Create build.ps1 — Windows equivalent of build.sh with -Clean, Git tag versioning, .zip archive
 13. Generate build instructions — created BUILDING.md
 14. Change "All Orgs" label to "Select supervisor(s)" on the Employees page supervisory org filter
+
+(New Claude Session) - Update install.sh / install.ps1 process
+
+1. Analyze CLAUDE.md
+2. Fix install.sh stalling at "Installation Paths" prompt — added user instruction before the first read
+3. Fix install.ps1 for the same issue — added the same instruction text
+4. Fix install.sh prompts not showing — echo -ne was captured by $(...), redirected to >&2
+5. Confirm install.ps1 was not affected by the same issue (it wasn't)
+6. Build the venv at the installation directory — already correct, no change needed
+7. Fix install.sh failing with "pip is not available" — removed system pip pre-flight check, venv's bundled pip is sufficient
+8. Add CHALLENGE_WORD prompt to install.sh — hidden input (read -rs), confirmation, match check, saved to .challenge_word with chmod 600, launcher reads from file
+9. Update install.ps1 with the same changes — Read-Host -AsSecureString, confirmation loop, saved as hidden file, both launchers updated to read from file
