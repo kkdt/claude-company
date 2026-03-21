@@ -290,3 +290,4 @@ podman run --rm \
 14. Zoom in/out on Render popup — Added − / 100% / + zoom controls to the Organization Render modal (50%–150%); zoom resets on open; print respects zoom level.
 15. Add zoom in/out to Public Organization Render popup — Same zoom controls added to the public-facing Render modal.
 16. Add Print to Public Organization Render popup — Added Print button with renderTreeText and printRender functions, zoom-aware print sizing.
+27. Add a "Render" button next to each employee in the Organization screen — added a per-employee Render button that opens the existing render modal scoped to that employee's subtree. 

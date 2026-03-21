@@ -27,6 +27,7 @@
       <span class="report-badge">{{ children|length }} direct report{{ 's' if children|length != 1 }}</span>
       {% endif %}
       <a class="btn-details" href="{{ url_for('employee_detail', employee_id=emp.employee_id) }}" onclick="event.stopPropagation()">Details</a>
+      <button class="btn-render-sub" title="Render subtree" onclick="event.stopPropagation(); openRenderSubtree('{{ emp.employee_id | e }}')">Render</button>
       <button class="btn-remove-emp" title="Remove employee"
               onclick="event.stopPropagation(); removeEmployee('{{ emp.employee_id | e }}', '{{ emp.employee_name | e }}')">&#215;</button>
     </div>
@@ -214,6 +215,11 @@
     border: 1px solid #666; border-radius: 4px; cursor: pointer; white-space: nowrap;
   }
   .btn-render:hover { background: #555; }
+  .btn-render-sub {
+    padding: 0.2rem 0.6rem; font-size: 0.78rem; background: #333; color: #d4d4d4;
+    border: 1px solid #666; border-radius: 4px; cursor: pointer; white-space: nowrap; flex-shrink: 0;
+  }
+  .btn-render-sub:hover { background: #555; color: #fff; }
 </style>
 
 <div class="toolbar">
@@ -716,6 +722,7 @@
   const ZOOM_STEPS = [50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150];
   const ZOOM_DEFAULT_IDX = 5; // 100%
   let zoomIdx = ZOOM_DEFAULT_IDX;
+  let renderRootEmpId = null; // null = full tree, else employee id for subtree
 
   function applyZoom() {
     const pct = ZOOM_STEPS[zoomIdx];
@@ -729,12 +736,29 @@
   }
 
   function openRender() {
+    renderRootEmpId = null;
     const rootItems = Array.from(
       document.querySelectorAll('#tree-root > .node-item:not(.removed)')
     );
     const treeData = rootItems.map(buildTreeData);
     const html = renderTreeHTML(treeData, '');
     document.getElementById('render-output').innerHTML = html;
+    document.querySelector('.render-modal-header > span').textContent = 'org chart — terminal tree';
+    zoomIdx = ZOOM_DEFAULT_IDX;
+    applyZoom();
+    document.getElementById('render-backdrop').classList.add('open');
+    document.addEventListener('keydown', renderEscListener);
+  }
+
+  function openRenderSubtree(empId) {
+    renderRootEmpId = empId;
+    const li = document.querySelector(`.node-item[data-emp-id="${empId}"]`);
+    if (!li) return;
+    const treeData = [buildTreeData(li)];
+    const html = renderTreeHTML(treeData, '');
+    document.getElementById('render-output').innerHTML = html;
+    const empName = li.dataset.empName || empId;
+    document.querySelector('.render-modal-header > span').textContent = 'subtree: ' + empName;
     zoomIdx = ZOOM_DEFAULT_IDX;
     applyZoom();
     document.getElementById('render-backdrop').classList.add('open');
@@ -748,17 +772,25 @@
 
   function printRender() {
     // Build plain-text version (no HTML spans) for print
-    const rootItems = Array.from(
-      document.querySelectorAll('#tree-root > .node-item:not(.removed)')
-    );
-    const treeData = rootItems.map(buildTreeData);
+    let treeData, title;
+    if (renderRootEmpId) {
+      const li = document.querySelector(`.node-item[data-emp-id="${renderRootEmpId}"]`);
+      treeData = li ? [buildTreeData(li)] : [];
+      title = 'Subtree: ' + (li ? li.dataset.empName : renderRootEmpId);
+    } else {
+      const rootItems = Array.from(
+        document.querySelectorAll('#tree-root > .node-item:not(.removed)')
+      );
+      treeData = rootItems.map(buildTreeData);
+      title = 'Organization Chart';
+    }
     const text = renderTreeText(treeData, '');
 
     const printPt = (ZOOM_STEPS[zoomIdx] / 100 * 11).toFixed(1);
     const frame = document.createElement('div');
     frame.id = 'print-frame';
     frame.style.cssText = `display:none;font-size:${printPt}pt`;
-    frame.textContent = 'Organization Chart\n\n' + text;
+    frame.textContent = title + '\n\n' + text;
     document.body.appendChild(frame);
     window.print();
     document.body.removeChild(frame);
