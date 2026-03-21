@@ -19,9 +19,6 @@ The following represent an Employee from the CSV header file.
 * Header "Current Hourly Rate" maps to JSON key `hourly_rate`
 * Header "Current Annual Salary" maps to JSON key `annual_salary`
 * Header "Location City, State" maps to JSON key `location`
-* Header "Grade Profile Minimum" maps to JSON key `salary_min`
-* Header "Grade Profile Midpoint" maps to JSON key `salary_mid`
-* Header "Grade Profile Maximum" maps to JSON key `salary_max`
 
 All other CSV headers maps to a JSON key `attributes` that is a JSON list of tuples of key-value pairs.
 

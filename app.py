@@ -49,9 +49,6 @@ FIELD_MAP = {
     "Current Hourly Rate": "hourly_rate",
     "Current Annual Salary": "annual_salary",
     "Location City, State": "location",
-    "Grade Profile Minimum": "salary_min",
-    "Grade Profile Midpoint": "salary_mid",
-    "Grade Profile Maximum": "salary_max",
 }
 
 
@@ -197,8 +194,7 @@ def preview_upload():
     new_map = {e["employee_id"]: e for e in new_employees}
 
     CORE_FIELDS = ["employee_name", "job_profile", "supervisor_organization",
-                   "annual_salary", "hourly_rate", "location",
-                   "salary_min", "salary_mid", "salary_max"]
+                   "annual_salary", "hourly_rate", "location"]
 
     added, removed, modified, unchanged = [], [], [], 0
     for eid, emp in new_map.items():
@@ -273,7 +269,7 @@ def export_csv():
     reverse_map = {v: k for k, v in FIELD_MAP.items()}
     core_headers = [reverse_map[f] for f in [
         "employee_id", "employee_name", "job_profile", "supervisor_organization",
-        "annual_salary", "hourly_rate", "location", "salary_min", "salary_mid", "salary_max"
+        "annual_salary", "hourly_rate", "location"
     ]]
     all_headers = core_headers + attr_keys
 
@@ -367,7 +363,7 @@ def organization_export():
     reverse_map = {v: k for k, v in FIELD_MAP.items()}
     core_headers = [reverse_map[f] for f in [
         "employee_id", "employee_name", "job_profile", "supervisor_organization",
-        "annual_salary", "hourly_rate", "location", "salary_min", "salary_mid", "salary_max"
+        "annual_salary", "hourly_rate", "location"
     ]]
     output = io.StringIO()
     writer = csv.DictWriter(output, fieldnames=core_headers + attr_keys, extrasaction="ignore", quoting=csv.QUOTE_ALL)
@@ -705,7 +701,7 @@ def public_organization():
         return redirect(url_for("organization"))
     all_employees = load_employees()
     # Strip compensation fields before exposing publicly
-    SALARY_FIELDS = ("annual_salary", "hourly_rate", "salary_min", "salary_mid", "salary_max")
+    SALARY_FIELDS = ("annual_salary", "hourly_rate")
     public_employees = [
         {k: v for k, v in emp.items() if k not in SALARY_FIELDS}
         for emp in all_employees

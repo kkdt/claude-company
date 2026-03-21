@@ -72,18 +72,6 @@
       <label>Hourly Rate</label>
       <span>{% if employee.hourly_rate %}{{ employee.hourly_rate | currency }}{% else %}<span class="empty">—</span>{% endif %}</span>
     </div>
-    <div class="field">
-      <label>Salary Min</label>
-      <span>{% if employee.salary_min %}{{ employee.salary_min | currency }}{% else %}<span class="empty">—</span>{% endif %}</span>
-    </div>
-    <div class="field">
-      <label>Salary Midpoint</label>
-      <span>{% if employee.salary_mid %}{{ employee.salary_mid | currency }}{% else %}<span class="empty">—</span>{% endif %}</span>
-    </div>
-    <div class="field">
-      <label>Salary Max</label>
-      <span>{% if employee.salary_max %}{{ employee.salary_max | currency }}{% else %}<span class="empty">—</span>{% endif %}</span>
-    </div>
   </div>
 </div>
 
