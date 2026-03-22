@@ -155,15 +155,27 @@ INSTALL_DATA_LINK="${INSTALL_DIR}/data"
 
 if [[ "${DATA_DIR}" != "${INSTALL_DATA_LINK}" ]]; then
     info "Linking ${INSTALL_DATA_LINK} -> ${DATA_DIR}..."
-    # Remove an existing link or directory (only if empty)
     if [[ -L "${INSTALL_DATA_LINK}" ]]; then
-        rm "${INSTALL_DATA_LINK}"
+        existing_target="$(readlink "${INSTALL_DATA_LINK}")"
+        if [[ "${existing_target}" == "${DATA_DIR}" ]]; then
+            success "Data symlink already points to ${DATA_DIR}."
+        else
+            rm "${INSTALL_DATA_LINK}"
+            ln -s "${DATA_DIR}" "${INSTALL_DATA_LINK}"
+            success "Data symlink updated."
+        fi
     elif [[ -d "${INSTALL_DATA_LINK}" ]]; then
-        rmdir "${INSTALL_DATA_LINK}" 2>/dev/null \
-            || die "Non-empty directory exists at ${INSTALL_DATA_LINK}. Please remove it manually."
+        if rmdir "${INSTALL_DATA_LINK}" 2>/dev/null; then
+            ln -s "${DATA_DIR}" "${INSTALL_DATA_LINK}"
+            success "Data symlink created."
+        else
+            warn "Non-empty directory exists at ${INSTALL_DATA_LINK} — leaving it in place."
+            warn "The application will use existing data at ${INSTALL_DATA_LINK}."
+        fi
+    else
+        ln -s "${DATA_DIR}" "${INSTALL_DATA_LINK}"
+        success "Data symlink created."
     fi
-    ln -s "${DATA_DIR}" "${INSTALL_DATA_LINK}"
-    success "Data symlink created."
 else
     mkdir -p "${INSTALL_DATA_LINK}"
     success "Data directory is co-located with install directory."

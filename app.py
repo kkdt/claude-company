@@ -39,7 +39,7 @@ CHALLENGE_WORD = os.environ.get("CHALLENGE_WORD", "")
 PUBLIC_ENDPOINTS = {
     "public_projects", "public_organization", "public_staffing_projections",
     "projects_export", "public_staffing_export",
-    "login", "logout", "static",
+    "login", "logout", "static", "favicon",
 }
 
 @app.before_request
@@ -181,6 +181,11 @@ def parse_csv(file_stream):
         employee["attributes"] = attributes
         employees.append(employee)
     return employees
+
+
+@app.route("/favicon.ico")
+def favicon():
+    return app.send_static_file("favicon.svg"), 200, {"Content-Type": "image/svg+xml"}
 
 
 @app.route("/", methods=["GET"])

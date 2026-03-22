@@ -96,3 +96,8 @@ The following are instructions history given to Claude Code to build upon the ba
 
 1. Analyze CLAUDE.md and code base — Explored the full project structure, architecture, routes, data model, and key design decisions.
 2. Update Employee schema so that salary_min, salary_mid, and salary_max is not part of the core JSON attributes — Moved those three fields from the core schema into the attributes list by removing them from FIELD_MAP and all downstream references in app.py, upload.html, employee_detail.html, and CLAUDE.md.
+3. Login received "Unsupported digestmod" error — Diagnosed as an itsdangerous < 2.0 compatibility issue with Python 3.9+. Pinned itsdangerous>=2.1.2 in requirements.txt.
+4. Can Flask sign using a more secure hashing algorithm? — Added SHA512SessionInterface to app.py overriding Flask's default SHA-1 session cookie signing with SHA-512 via itsdangerous.
+5. Update install.sh to not fail if the data directory has data — Replaced the die on non-empty directory with a warn; added logic to skip re-linking if the symlink already points to the correct target.
+6. Update install.ps1 to do the same — Applied the same logic to the Windows installer: warn instead of abort on non-empty directory, skip junction creation if already pointing to the correct target.
+7. Receive 404 for favicon.ico — Added /favicon.ico route serving favicon.svg, added favicon to PUBLIC_ENDPOINTS, and uncommented + updated the <link> tags in base.html. 
