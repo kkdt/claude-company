@@ -106,3 +106,4 @@ The following are instructions history given to Claude Code to build upon the ba
 
 1. Added color_label to Project schema — PROJECT_FIELD_MAP, create/edit/export routes in app.py; schema table, create form in projects.html; detail view and edit form in project_detail.html; CLAUDE.md updated.
 2. Fixed staffing projections crash when no staffing data — Guarded all_record_months[-1] index access in staffing_projections.html:235.
+3. Color filter bar (JS): use color_label for button text — Added color_label to PROJ_META JSON; updated colorMap to track {pids, label} per color; button text now uses color_label if set, else falls back to the hex color value.

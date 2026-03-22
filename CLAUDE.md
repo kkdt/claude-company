@@ -27,7 +27,7 @@ All other CSV headers maps to a JSON key `attributes` that is a JSON list of tup
 * Header "Project" maps to JSON key `project_id`
 * Header "Description" maps to JSON key `project_description`
 * Header "Color" maps to json key `project_color` - HTML color codes
-* Header "Color Label" maps to json key `color_label` - Short text label for the color (e.g. Blue)
+* Header "Color Label" maps to json key `color_label` - Short text label for the color (e.g. Blue). If the same color has different labels, then the first one processed will be displayed; different colors can have the same label.
 * Header "Active" maps to json key `active`
 
 All other CSV headers maps to a JSON key `attributes` that is a JSON list of tuples of key-value pairs.
