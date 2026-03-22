@@ -1,10 +1,13 @@
 import csv
+import hashlib
 import json
 import io
 import os
 import re
 import sys
 from flask import Flask, request, redirect, url_for, render_template, flash, Response, jsonify, session
+from flask.sessions import SecureCookieSessionInterface
+from itsdangerous import URLSafeTimedSerializer
 
 # When frozen by PyInstaller (--onefile), bundled files are extracted to a
 # temporary directory pointed to by sys._MEIPASS.  At runtime the binary
@@ -13,8 +16,23 @@ from flask import Flask, request, redirect, url_for, render_template, flash, Res
 _BUNDLE_DIR = getattr(sys, '_MEIPASS', os.path.dirname(os.path.abspath(__file__)))
 _RUNTIME_DIR = os.path.dirname(os.path.abspath(sys.executable if getattr(sys, 'frozen', False) else __file__))
 
+class SHA512SessionInterface(SecureCookieSessionInterface):
+    def get_signing_serializer(self, app):
+        signer_kwargs = dict(
+            key_derivation=self.key_derivation,
+            digest_method=hashlib.sha512,
+        )
+        return URLSafeTimedSerializer(
+            app.secret_key,
+            salt=self.salt,
+            serializer=self.serializer,
+            signer_kwargs=signer_kwargs,
+        )
+
+
 app = Flask(__name__, template_folder=os.path.join(_BUNDLE_DIR, 'templates'))
 app.secret_key = "workforce-secret"
+app.session_interface = SHA512SessionInterface()
 
 CHALLENGE_WORD = os.environ.get("CHALLENGE_WORD", "")
 
