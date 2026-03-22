@@ -173,23 +173,34 @@ $InstallDataLink = Join-Path $InstallDir "data"
 if ($DataDir -ne $InstallDataLink) {
     Write-Info "Creating directory junction: $InstallDataLink -> $DataDir"
 
+    $skipJunction = $false
     if (Test-Path $InstallDataLink) {
         $item = Get-Item $InstallDataLink -Force
         if ($item.LinkType -eq 'Junction') {
-            $item.Delete()
+            $existingTarget = $item.Target
+            if ($existingTarget -eq $DataDir) {
+                Write-Ok "Directory junction already points to $DataDir."
+                $skipJunction = $true
+            } else {
+                $item.Delete()
+            }
         } elseif ((Get-ChildItem $InstallDataLink -Force | Measure-Object).Count -eq 0) {
             Remove-Item $InstallDataLink -Force
         } else {
-            Abort "A non-empty directory already exists at $InstallDataLink. Remove it manually and re-run."
+            Write-Warn "A non-empty directory already exists at $InstallDataLink — leaving it in place."
+            Write-Warn "The application will use existing data at $InstallDataLink."
+            $skipJunction = $true
         }
     }
 
-    # cmd /c mklink /J is the reliable cross-version way to create junctions
-    $result = cmd /c "mklink /J `"$InstallDataLink`" `"$DataDir`"" 2>&1
-    if ($LASTEXITCODE -ne 0) {
-        Abort "Failed to create directory junction: $result"
+    if (-not $skipJunction) {
+        # cmd /c mklink /J is the reliable cross-version way to create junctions
+        $result = cmd /c "mklink /J `"$InstallDataLink`" `"$DataDir`"" 2>&1
+        if ($LASTEXITCODE -ne 0) {
+            Abort "Failed to create directory junction: $result"
+        }
+        Write-Ok "Directory junction created."
     }
-    Write-Ok "Directory junction created."
 } else {
     New-Item -ItemType Directory -Force -Path $InstallDataLink | Out-Null
     Write-Ok "Data directory is co-located with install directory."
