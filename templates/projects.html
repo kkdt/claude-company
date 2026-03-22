@@ -112,6 +112,7 @@
         <tr><td>Project</td><td>project_id</td><td>Required</td></tr>
         <tr><td>Description</td><td>project_description</td><td></td></tr>
         <tr><td>Color</td><td>project_color</td><td>HTML color code (e.g. #1a3a5c)</td></tr>
+        <tr><td>Color Label</td><td>color_label</td><td>Short text label for the color (e.g. Blue)</td></tr>
         <tr><td>Active</td><td>active</td><td>1 / true / yes → active</td></tr>
         <tr><td><em>Any other header</em></td><td>attributes</td><td>Stored as key-value pairs</td></tr>
       </tbody>
@@ -135,6 +136,10 @@
       <div class="form-group">
         <label for="project_color">Color</label>
         <input type="color" id="project_color" name="project_color" value="#1a3a5c" style="width:48px;height:34px;padding:2px;border:1px solid #ccd;border-radius:4px;cursor:pointer;background:#f9fafc;">
+      </div>
+      <div class="form-group">
+        <label for="color_label">Color Label</label>
+        <input type="text" id="color_label" name="color_label" placeholder="e.g. Blue" style="width:140px;">
       </div>
     </div>
 

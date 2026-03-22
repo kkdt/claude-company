@@ -101,7 +101,7 @@
         {% if project.project_color %}
         <span style="display:inline-flex;align-items:center;gap:0.5rem;">
           <span style="display:inline-block;width:18px;height:18px;border-radius:50%;background:{{ project.project_color }};border:1px solid rgba(0,0,0,.15);"></span>
-          {{ project.project_color }}
+          {{ project.project_color }}{% if project.color_label %} — {{ project.color_label }}{% endif %}
         </span>
         {% else %}<span class="empty">No color set</span>{% endif %}
       </div>
@@ -151,6 +151,11 @@
           <input type="color" id="project_color" name="project_color"
                  value="{{ project.project_color or '#1a3a5c' }}"
                  style="width:48px;height:34px;padding:2px;border:1px solid #ccd;border-radius:4px;cursor:pointer;background:#f9fafc;">
+        </div>
+        <div class="form-group">
+          <label for="color_label">Color Label</label>
+          <input type="text" id="color_label" name="color_label"
+                 value="{{ project.color_label or '' }}" placeholder="e.g. Blue" style="width:140px;">
         </div>
         <div class="form-group" style="justify-content:flex-end;">
           <label for="active" style="display:flex;align-items:center;gap:0.4rem;cursor:pointer;font-weight:600;color:#555;font-size:0.8rem;">

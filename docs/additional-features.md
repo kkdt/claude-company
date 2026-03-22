@@ -101,3 +101,8 @@ The following are instructions history given to Claude Code to build upon the ba
 5. Update install.sh to not fail if the data directory has data — Replaced the die on non-empty directory with a warn; added logic to skip re-linking if the symlink already points to the correct target.
 6. Update install.ps1 to do the same — Applied the same logic to the Windows installer: warn instead of abort on non-empty directory, skip junction creation if already pointing to the correct target.
 7. Receive 404 for favicon.ico — Added /favicon.ico route serving favicon.svg, added favicon to PUBLIC_ENDPOINTS, and uncommented + updated the <link> tags in base.html. 
+
+(New Claude Session) - Add "Color Label" to Projects schema
+
+1. Added color_label to Project schema — PROJECT_FIELD_MAP, create/edit/export routes in app.py; schema table, create form in projects.html; detail view and edit form in project_detail.html; CLAUDE.md updated.
+2. Fixed staffing projections crash when no staffing data — Guarded all_record_months[-1] index access in staffing_projections.html:235.

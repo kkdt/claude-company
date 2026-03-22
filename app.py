@@ -56,6 +56,7 @@ PROJECT_FIELD_MAP = {
     "Project": "project_id",
     "Description": "project_description",
     "Color": "project_color",
+    "Color Label": "color_label",
     "Active": "active",
 }
 
@@ -464,11 +465,12 @@ def projects_create():
         flash(f"Project '{project_id}' already exists.")
         return redirect(url_for("projects"))
     project_color = request.form.get("project_color", "").strip()
+    color_label = request.form.get("color_label", "").strip()
     active = True
     keys = request.form.getlist("attr_key")
     values = request.form.getlist("attr_value")
     attributes = [{"key": k.strip(), "value": v.strip()} for k, v in zip(keys, values) if k.strip()]
-    project = {"project_id": project_id, "project_description": project_description, "project_color": project_color, "active": active, "attributes": attributes}
+    project = {"project_id": project_id, "project_description": project_description, "project_color": project_color, "color_label": color_label, "active": active, "attributes": attributes}
     all_projects.append(project)
     save_projects(all_projects)
     flash(f"Project '{project_id}' created.")
@@ -483,7 +485,7 @@ def projects_export():
         return redirect(url_for("projects"))
 
     reverse_map = {v: k for k, v in PROJECT_FIELD_MAP.items()}
-    core_headers = [reverse_map[f] for f in ["project_id", "project_description", "project_color", "active"]]
+    core_headers = [reverse_map[f] for f in ["project_id", "project_description", "project_color", "color_label", "active"]]
 
     attr_keys, seen = [], set()
     for p in all_projects:
@@ -500,6 +502,7 @@ def projects_export():
             reverse_map["project_id"]: p.get("project_id", ""),
             reverse_map["project_description"]: p.get("project_description", ""),
             reverse_map["project_color"]: p.get("project_color", ""),
+            reverse_map["color_label"]: p.get("color_label", ""),
             reverse_map["active"]: "true" if p.get("active") else "false",
         }
         for attr in p.get("attributes", []):
@@ -531,6 +534,7 @@ def projects_edit(project_id):
         return redirect(url_for("projects"))
     project["project_description"] = request.form.get("project_description", "").strip()
     project["project_color"] = request.form.get("project_color", "").strip()
+    project["color_label"] = request.form.get("color_label", "").strip()
     project["active"] = "1" in request.form.getlist("active")
     keys = request.form.getlist("attr_key")
     values = request.form.getlist("attr_value")

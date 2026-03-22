@@ -232,7 +232,7 @@ function projTagStyle(pid) {
       {% endfor %}
     </select>
     <button type="submit" style="padding:0.35rem 0.9rem;font-size:0.875rem;background:#1a3a5c;color:#fff;border:none;border-radius:4px;cursor:pointer;">Apply</button>
-    {% if from_year != today_year or from_month != today_month or to_year != all_record_months[-1][0] or to_month != all_record_months[-1][1] %}
+    {% if all_record_months and (from_year != today_year or from_month != today_month or to_year != all_record_months[-1][0] or to_month != all_record_months[-1][1]) %}
     <a href="{{ url_for('staffing_projections') }}" style="font-size:0.8rem;color:#1a3a5c;text-decoration:none;margin-left:0.25rem;">Reset</a>
     {% endif %}
   </div>
