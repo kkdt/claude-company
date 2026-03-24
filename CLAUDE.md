@@ -39,6 +39,7 @@ JSON model that captures monthly project assignments.
 * JSON attribute `year` (YYYY)
 * JSON attribute `month` - Number 1-12, January = 1
 * JSON attribute `assignments` - A list of dictionary items: `employee_id`, `employee_name`, `project_id`
+* JSON attribute `archive` - Boolean, default `false`; when `true` the month is archived and hidden from the default staffing list view
 
 ## Screens
 

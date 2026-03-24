@@ -777,7 +777,8 @@ def staffing():
     if (today.year, today.month) not in existing:
         existing.add((today.year, today.month))
     months = sorted(existing, reverse=True)
-    return render_template("staffing.html", months=months, today_year=today.year, today_month=today.month)
+    archived = {(r["year"], r["month"]) for r in records if r.get("archive")}
+    return render_template("staffing.html", months=months, archived=archived, today_year=today.year, today_month=today.month)
 
 
 @app.route("/staffing/projections")
@@ -959,6 +960,19 @@ def staffing_month_delete(year, month):
     records = [r for r in records if not (r["year"] == year and r["month"] == month)]
     save_staffing(records)
     flash(f"Deleted staffing month {year}-{month:02d}.")
+    return redirect(url_for("staffing"))
+
+
+@app.route("/staffing/<int:year>/<int:month>/archive", methods=["POST"])
+def staffing_month_archive(year, month):
+    records = load_staffing()
+    existing = get_staffing_month(records, year, month)
+    action = request.form.get("action", "archive")
+    if existing:
+        existing["archive"] = (action == "archive")
+        save_staffing(records)
+        label = "Archived" if action == "archive" else "Unarchived"
+        flash(f"{label} staffing for {year}-{month:02d}.")
     return redirect(url_for("staffing"))
 
 

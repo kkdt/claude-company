@@ -140,3 +140,15 @@ The following are instructions history given to Claude Code to build upon the ba
 28. Update the banner for "Project ID already in use" message to be error
 29. From "Statistics Projects" screen, add a column "Net Change" next to the "Project" column that is fixed and does not scroll that is net change from the start month to the end month filter client-side calculated.
 30. Can we include the "net change column" to the Export to CSV?
+
+(New Claude Session) - Allow to archive past months in Staffing
+
+1. Analyze CLAUDE.md and source code — explored the full codebase and provided a summary of architecture, routes, data models, and templates.
+2. Analyze CLAUDE.md and source code (after CLAUDE.md update) — identified the discrepancy between the spec's "3-tuple" wording and the dict-based implementation in code.
+3. Add JSON attribute to staffing "archive" — added archive boolean to the Staffing Schema in CLAUDE.md, added /staffing/<year>/<month>/archive POST route, updated staffing() to pass archive state, and updated staffing.html with archive/unarchive buttons and a show-archived toggle.
+4. Only allow the user to archive months that are in the past — restricted the Archive button to only render when is_past is true.
+5. Arrange the "Archive" button to the left of the "View" button — reordered the action buttons in the month row.
+6. Update "Archive" button to be an icon with tooltip — replaced text buttons with SVG icon buttons and title attributes.
+7. Add a filter to show and hide archived months in Staffing — replaced the checkbox toggle with Active / Archived / All filter buttons in the toolbar.
+8. Default view for Staffing should be to view only active months — moved the default hidden state of archived rows into server-rendered HTML (style="display:none") instead of relying on JS.
+9. Update the archive icon so that the unarchive arrow is more clear — replaced the ambiguous arrow SVG with a clearer upward chevron + stem inside the archive box.
