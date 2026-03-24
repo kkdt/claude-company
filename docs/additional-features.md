@@ -107,3 +107,36 @@ The following are instructions history given to Claude Code to build upon the ba
 1. Added color_label to Project schema — PROJECT_FIELD_MAP, create/edit/export routes in app.py; schema table, create form in projects.html; detail view and edit form in project_detail.html; CLAUDE.md updated.
 2. Fixed staffing projections crash when no staffing data — Guarded all_record_months[-1] index access in staffing_projections.html:235.
 3. Color filter bar (JS): use color_label for button text — Added color_label to PROJ_META JSON; updated colorMap to track {pids, label} per color; button text now uses color_label if set, else falls back to the hex color value.
+
+(New Claude Session) - Add Statistics pages
+
+1. Analyze CLAUDE.md and source code
+2. On "Staffing" screen, create a sub navigation "Statistics" with a 3rd level navigation with one being for Projects
+3. Make the 3rd-level nav a different color and inline with the 2nd-level navigation
+4. For "Statistics Projects", left align the "Project" column and make it sortable
+5. Add a description to "Statistics Projects"
+6. Add Export to CSV to "Statistics Projects"
+7. Update Export to CSV button to match look and feel of other Export buttons
+8. Create "Statistics Employee" screen counting project assignments per employee per month
+9. On "Statistics Projects", display Project summary data in a modal
+10. Fix: modal not showing
+11. For "Statistics Employees" Export to CSV, include job_profile and supervisor_organization, double-quote all values
+12. "Statistics Projects" Export to CSV should double-quote all values
+13. "Statistics Projects" — display all projects including inactive ones for the month range filter
+14. Make "Statistics Projects" handle large number of projects better (max-height, search, active filter)
+15. "Statistics Projects" Export to CSV — include active and color_label, double-quote all values
+16. "Statistics Projects" Export to CSV — respect "Active Only" quick filter
+17. "Statistics Projects" — include all projects including inactive for the month range filter
+18. On "Statistics Employees", add quick filters: employee name search and supervisory org multiselect dropdown
+19. Added Statistics modal to Project Details (link, modal, /projects/<id>/statistics API route)
+20. Changed modal month format to YYYY-MM
+21. Fixed modal scrolling to handle large number of months (flex column, body-only scroll)
+22. Answered question about Delete behavior with staffing assignments
+23. Added description to Delete button (tooltip + updated confirm dialog)
+24. Updated statistics API to only show months with assignments
+25. Added Project ID editing with cascading staffing assignment updates
+26. Added confirmation dialog when renaming a Project ID
+27. Update the banner for "Project ID already in use" message to be warning
+28. Update the banner for "Project ID already in use" message to be error
+29. From "Statistics Projects" screen, add a column "Net Change" next to the "Project" column that is fixed and does not scroll that is net change from the start month to the end month filter client-side calculated.
+30. Can we include the "net change column" to the Export to CSV?

@@ -32,6 +32,14 @@ All other CSV headers maps to a JSON key `attributes` that is a JSON list of tup
 
 All other CSV headers maps to a JSON key `attributes` that is a JSON list of tuples of key-value pairs.
 
+## Staffing Schema
+
+JSON model that captures monthly project assignments.
+
+* JSON attribute `year` (YYYY)
+* JSON attribute `month` - Number 1-12, January = 1
+* JSON attribute `assignments` - A list of dictionary items: `employee_id`, `employee_name`, `project_id`
+
 ## Screens
 
 All screens require a challenge-word login to access except for the "Public" navigation screens. The Public screens are read-only data without
@@ -52,6 +60,8 @@ sensitive information such as hourly rate and salary data.
     - An employee is matrixed across different projects
     - An employee can support multiple projects in a single month
     - Screens to project staffing assignments for future months while preserving past assignments in JSON format
+    - Statistics for Projects - Number of employees assigned to each project per month
+    - Statistics for Employees - Number of project assignments each employee has per month
 
 7. Public - Public view that includes read-only to Organization, Projects, and Staffing Projections; will be hidden when the user logs with the challenge word.
 

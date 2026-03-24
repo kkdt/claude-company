@@ -37,6 +37,47 @@
     border: none; border-radius: 4px; cursor: pointer;
   }
   .btn-danger:hover { background: #a93226; }
+  .btn-stats {
+    padding: 0.35rem 0.9rem; font-size: 0.85rem; background: #2e7d4f; color: #fff;
+    border: none; border-radius: 4px; cursor: pointer;
+  }
+  .btn-stats:hover { background: #245f3c; }
+
+  /* Statistics modal */
+  .modal-backdrop {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,.45); z-index: 1000; align-items: center; justify-content: center;
+  }
+  .modal-backdrop.open { display: flex; }
+  .modal {
+    background: #fff; border-radius: 10px; box-shadow: 0 8px 32px rgba(0,0,0,.2);
+    width: 460px; max-width: 95vw; max-height: 80vh;
+    display: flex; flex-direction: column;
+  }
+  .modal-header {
+    background: #1a3a5c; color: #fff; padding: 1rem 1.25rem;
+    display: flex; align-items: center; justify-content: space-between;
+    border-radius: 10px 10px 0 0; flex-shrink: 0;
+  }
+  .modal-header h3 { font-size: 1rem; font-weight: 600; }
+  .modal-close {
+    background: none; border: none; color: #fff; font-size: 1.25rem;
+    cursor: pointer; line-height: 1; padding: 0 0.25rem; opacity: 0.8;
+  }
+  .modal-close:hover { opacity: 1; }
+  .modal-body { padding: 1.25rem; overflow-y: auto; flex: 1; }
+  .stats-table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
+  .stats-table thead tr { background: #f0f4f8; }
+  .stats-table thead th { padding: 0.5rem 0.75rem; text-align: left; color: #444; font-weight: 600; border-bottom: 2px solid #dde; }
+  .stats-table tbody td { padding: 0.5rem 0.75rem; border-bottom: 1px solid #eef; }
+  .stats-table tbody tr:last-child td { border-bottom: none; }
+  .count-badge {
+    display: inline-block; min-width: 2rem; padding: 0.2rem 0.55rem;
+    border-radius: 999px; font-size: 0.8rem; font-weight: 700;
+    background: #e8f0fe; color: #1a3a5c; text-align: center;
+  }
+  .count-zero { color: #ccc; }
+  .modal-empty { text-align: center; padding: 2rem; color: #888; font-size: 0.875rem; font-style: italic; }
 
   /* Edit form */
   .edit-card {
@@ -84,9 +125,10 @@
   <div class="detail-header" {% if project.project_color %}style="background:{{ project.project_color }};"{% endif %}>
     <h2>{{ project.project_id }}</h2>
     <div class="actions">
+      <button type="button" class="btn-stats" onclick="openStatsModal()">Statistics</button>
       <form method="post" action="{{ url_for('projects_delete', project_id=project.project_id) }}"
-            onsubmit="return confirm('Delete project \'{{ project.project_id }}\'?');" style="margin:0;">
-        <button type="submit" class="btn-danger">Delete Project</button>
+            onsubmit="return confirm('Delete project \'{{ project.project_id }}\'? This will also remove it from all staffing assignments.');" style="margin:0;">
+        <button type="submit" class="btn-danger" title="Permanently deletes this project and removes it from all staffing assignments.">Delete Project</button>
       </form>
     </div>
   </div>
@@ -139,8 +181,14 @@
 <div class="edit-card">
   <div class="edit-header">Edit Project</div>
   <div class="edit-body">
-    <form method="post" action="{{ url_for('projects_edit', project_id=project.project_id) }}">
+    <form method="post" action="{{ url_for('projects_edit', project_id=project.project_id) }}"
+          onsubmit="return confirmEditSubmit(this)">
       <div class="form-row">
+        <div class="form-group">
+          <label for="project_id">Project ID</label>
+          <input type="text" id="project_id" name="project_id"
+                 value="{{ project.project_id }}" placeholder="Project ID" style="width:160px;" required>
+        </div>
         <div class="form-group">
           <label for="project_description">Description</label>
           <input type="text" id="project_description" name="project_description"
@@ -186,7 +234,72 @@
   </div>
 </div>
 
+<!-- Statistics modal -->
+<div class="modal-backdrop" id="stats-modal" onclick="if(event.target===this)closeStatsModal()">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>Statistics — {{ project.project_id }}</h3>
+      <button class="modal-close" onclick="closeStatsModal()">&times;</button>
+    </div>
+    <div class="modal-body" id="stats-modal-body">
+      <p class="modal-empty">Loading…</p>
+    </div>
+  </div>
+</div>
+
 <script>
+  const STATS_URL = {{ url_for('projects_statistics', project_id=project.project_id) | tojson }};
+  const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+
+  function openStatsModal() {
+    document.getElementById('stats-modal').classList.add('open');
+    document.getElementById('stats-modal-body').innerHTML = '<p class="modal-empty">Loading…</p>';
+    fetch(STATS_URL)
+      .then(r => r.json())
+      .then(data => {
+        const months = data.months || [];
+        if (!months.length) {
+          document.getElementById('stats-modal-body').innerHTML = '<p class="modal-empty">No staffing data found for this project.</p>';
+          return;
+        }
+        const rows = months.map(m => {
+          const label = m.year + '-' + String(m.month).padStart(2, '0');
+          const cell = m.count
+            ? `<span class="count-badge">${m.count}</span>`
+            : `<span class="count-zero">—</span>`;
+          return `<tr><td>${label}</td><td>${cell}</td></tr>`;
+        }).join('');
+        document.getElementById('stats-modal-body').innerHTML =
+          `<table class="stats-table">
+            <thead><tr><th>Month</th><th>Employees Assigned</th></tr></thead>
+            <tbody>${rows}</tbody>
+          </table>`;
+      })
+      .catch(() => {
+        document.getElementById('stats-modal-body').innerHTML = '<p class="modal-empty">Failed to load statistics.</p>';
+      });
+  }
+
+  function closeStatsModal() {
+    document.getElementById('stats-modal').classList.remove('open');
+  }
+
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeStatsModal(); });
+</script>
+
+<script>
+  const ORIGINAL_PROJECT_ID = {{ project.project_id | tojson }};
+
+  function confirmEditSubmit(form) {
+    const newId = form.querySelector('#project_id').value.trim();
+    if (newId && newId !== ORIGINAL_PROJECT_ID) {
+      return confirm(
+        'Renaming project \'' + ORIGINAL_PROJECT_ID + '\' to \'' + newId + '\' will update all staffing assignments. Continue?'
+      );
+    }
+    return true;
+  }
+
   function addAttrRow(key, val) {
     const list = document.getElementById('attr-list');
     const row = document.createElement('div');

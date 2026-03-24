@@ -1,0 +1,424 @@
+{% extends "base.html" %}
+{% block content %}
+<style>
+  .subnav {
+    display: flex; align-items: center; border-bottom: 2px solid #dde;
+    margin-bottom: 1.5rem;
+  }
+  .subnav a {
+    padding: 0.55rem 1.25rem; font-size: 0.9rem; color: #555; text-decoration: none;
+    border-bottom: 3px solid transparent; margin-bottom: -2px;
+  }
+  .subnav a:hover { color: #1a3a5c; }
+  .subnav a.active { color: #1a3a5c; font-weight: 600; border-bottom-color: #1a3a5c; }
+  .subnav-sep {
+    width: 1px; height: 1.1rem; background: #ccd; margin: 0 0.25rem; flex-shrink: 0;
+  }
+  .subnav a.sub3 { font-size: 0.82rem; color: #2e7d4f; }
+  .subnav a.sub3:hover { color: #245f3c; }
+  .subnav a.sub3.active { color: #2e7d4f; font-weight: 600; border-bottom-color: #2e7d4f; }
+
+  .toolbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.25rem; }
+  .toolbar h2 { font-size: 1.2rem; }
+
+  .filter-bar {
+    background: #fff; border-radius: 8px; box-shadow: 0 1px 4px rgba(0,0,0,.1);
+    padding: 0.75rem 1.25rem; margin-bottom: 1rem;
+    display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap;
+  }
+  .filter-bar label { font-size: 0.8rem; font-weight: 600; color: #555; white-space: nowrap; }
+  .filter-bar select {
+    padding: 0.35rem 0.65rem; border: 1px solid #ccd; border-radius: 4px;
+    font-size: 0.875rem; background: #f9fafc; min-width: 0;
+  }
+  .filter-bar select:focus { outline: none; border-color: #1a3a5c; }
+
+  .matrix-wrap {
+    overflow: auto; max-height: calc(100vh - 320px); background: #fff; border-radius: 8px;
+    box-shadow: 0 1px 4px rgba(0,0,0,.1);
+  }
+  .table-toolbar {
+    display: flex; align-items: center; gap: 0.65rem; flex-wrap: wrap; margin-bottom: 0.75rem;
+  }
+  .search-input {
+    padding: 0.35rem 0.65rem; border: 1px solid #ccd; border-radius: 4px;
+    font-size: 0.875rem; background: #f9fafc; width: 220px;
+  }
+  .search-input:focus { outline: none; border-color: #1a3a5c; }
+  .qf-btn {
+    padding: 0.25rem 0.75rem; border-radius: 999px; border: 2px solid transparent;
+    font-size: 0.78rem; font-weight: 600; cursor: pointer; background: #e8f0fe; color: #1a3a5c;
+  }
+  .qf-btn.on { border-color: rgba(0,0,0,.35); box-shadow: 0 0 0 2px rgba(0,0,0,.15); }
+  .row-count { font-size: 0.8rem; color: #888; margin-left: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
+  thead tr { background: #1a3a5c; color: #fff; }
+  thead th {
+    padding: 0.65rem 0.9rem; text-align: center; white-space: nowrap;
+    font-weight: 600; position: sticky; top: 0; z-index: 2; background: #1a3a5c;
+  }
+  thead th:first-child { text-align: left; position: sticky; left: 0; z-index: 3; }
+  tbody td:first-child {
+    position: sticky; left: 0; z-index: 1; background: inherit; white-space: nowrap;
+  }
+  tbody tr:nth-child(odd) td:first-child  { background: #fff; }
+  tbody tr:nth-child(even) td:first-child { background: #f8fafc; }
+  tbody tr:hover td:first-child           { background: #eef3f9; }
+  thead th.net-change-cell {
+    position: sticky; z-index: 3; background: #1a3a5c; text-align: center;
+    border-left: 1px solid rgba(255,255,255,.15); border-right: 1px solid rgba(255,255,255,.15);
+  }
+  tbody td.net-change-cell {
+    position: sticky; z-index: 1; background: inherit; text-align: center; white-space: nowrap;
+    border-right: 1px solid #e0e6ed;
+  }
+  tbody tr:nth-child(odd)  td.net-change-cell { background: #fff; }
+  tbody tr:nth-child(even) td.net-change-cell { background: #f8fafc; }
+  tbody tr:hover           td.net-change-cell { background: #eef3f9; }
+  .delta-pos  { color: #2e7d4f; font-weight: 700; }
+  .delta-neg  { color: #c0392b; font-weight: 700; }
+  .delta-zero { color: #aaa; }
+  tbody tr:nth-child(even) { background: #f8fafc; }
+  tbody tr:hover            { background: #eef3f9; }
+  tbody td { padding: 0.55rem 0.9rem; border-bottom: 1px solid #e8ecf0; text-align: center; min-width: 80px; }
+  tbody td:first-child { text-align: left; }
+  thead th:first-child { cursor: pointer; user-select: none; }
+  thead th:first-child:hover { background: #255480; }
+  .sort-indicator { margin-left: 0.35rem; opacity: 0.7; font-size: 0.75rem; }
+  .count-badge {
+    display: inline-block; min-width: 2rem; padding: 0.2rem 0.55rem;
+    border-radius: 999px; font-size: 0.8rem; font-weight: 700;
+    background: #e8f0fe; color: #1a3a5c;
+  }
+  .count-zero { color: #ccc; font-size: 0.85rem; }
+  .emp-name { font-weight: 600; }
+  .proj-desc { font-size: 0.75rem; color: #888; display: block; margin-top: 0.1rem; }
+  .color-dot {
+    display: inline-block; width: 10px; height: 10px; border-radius: 50%;
+    margin-right: 0.35rem; vertical-align: middle; flex-shrink: 0;
+  }
+  .month-label { font-size: 0.875rem; }
+  .month-badge {
+    display: inline-block; padding: 0.1rem 0.4rem; border-radius: 999px;
+    font-size: 0.7rem; font-weight: 600; margin-left: 0.3rem; vertical-align: middle;
+  }
+  .badge-current { background: #d4edda; color: #155724; }
+  .badge-past    { background: #f0f0f0; color: #666; }
+  .badge-future  { background: #e8f0fe; color: #1a3a5c; }
+  thead th.col-current { background: #255480; }
+  .empty { text-align: center; padding: 3rem; color: #888; }
+
+  /* Modal */
+  .modal-backdrop {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,.45); z-index: 1000; align-items: center; justify-content: center;
+  }
+  .modal-backdrop.open { display: flex; }
+  .modal {
+    background: #fff; border-radius: 10px; box-shadow: 0 8px 32px rgba(0,0,0,.2);
+    width: 480px; max-width: 95vw; max-height: 85vh; overflow-y: auto;
+  }
+  .modal-header {
+    background: #1a3a5c; color: #fff; padding: 1rem 1.25rem;
+    display: flex; align-items: center; justify-content: space-between;
+    border-radius: 10px 10px 0 0;
+  }
+  .modal-header h3 { font-size: 1rem; font-weight: 600; }
+  .modal-close {
+    background: none; border: none; color: #fff; font-size: 1.25rem;
+    cursor: pointer; line-height: 1; padding: 0 0.25rem; opacity: 0.8;
+  }
+  .modal-close:hover { opacity: 1; }
+  .modal-body { padding: 1.25rem; }
+  .modal-row {
+    display: flex; gap: 0.75rem; padding: 0.45rem 0; border-bottom: 1px solid #eef;
+    font-size: 0.875rem;
+  }
+  .modal-row:last-child { border-bottom: none; }
+  .modal-label { width: 130px; flex-shrink: 0; font-weight: 600; color: #555; }
+  .modal-value { color: #222; }
+  .modal-color-swatch {
+    display: inline-block; width: 14px; height: 14px; border-radius: 3px;
+    margin-right: 0.4rem; vertical-align: middle; border: 1px solid rgba(0,0,0,.15);
+  }
+  .modal-footer { padding: 0.85rem 1.25rem; border-top: 1px solid #eef; text-align: right; }
+  .btn-view-profile {
+    display: inline-block; padding: 0.4rem 1rem; font-size: 0.875rem;
+    background: #1a3a5c; color: #fff; border-radius: 4px; text-decoration: none;
+  }
+  .btn-view-profile:hover { background: #255480; color: #fff; text-decoration: none; }
+  .proj-btn {
+    background: none; border: none; padding: 0; cursor: pointer; text-align: left;
+    color: #1a3a5c; font-weight: 600; font-size: inherit; font-family: inherit;
+  }
+  .proj-btn:hover { text-decoration: underline; }
+</style>
+
+{% set MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'] %}
+
+<script>
+const PROJ_DATA = {
+  {% for pid in all_pids %}
+  {% set proj = proj_map.get(pid, {}) %}
+  {{ pid | tojson }}: {
+    "id":          {{ pid | tojson }},
+    "description": {{ (proj.get('project_description') or '') | tojson }},
+    "color":       {{ (proj.get('project_color') or '') | tojson }},
+    "color_label": {{ (proj.get('color_label') or '') | tojson }},
+    "active":      {{ (proj.get('active', True)) | tojson }},
+    "url":         {{ url_for('projects_detail', project_id=pid) | tojson }}
+  }{% if not loop.last %},{% endif %}
+  {% endfor %}
+};
+</script>
+
+<div class="subnav">
+  <a href="{{ url_for('staffing') }}">Staffing</a>
+  <a href="{{ url_for('staffing_projections') }}">Projections</a>
+  <a href="{{ url_for('staffing_statistics_projects') }}" class="active">Statistics</a>
+  <div class="subnav-sep"></div>
+  <a href="{{ url_for('staffing_statistics_projects') }}" class="sub3 active">Projects</a>
+  <a href="{{ url_for('staffing_statistics_employees') }}" class="sub3">Employees</a>
+</div>
+
+<div class="toolbar">
+  <h2>Statistics: Projects</h2>
+  {% if all_pids and months %}
+  <a class="btn-export" id="export-btn" href="{{ url_for('staffing_statistics_projects_export', from_year=from_year, from_month=from_month, to_year=to_year, to_month=to_month) }}">Export to CSV</a>
+  {% endif %}
+</div>
+
+<p style="font-size:0.875rem;color:#555;margin-bottom:1rem;">
+  Number of employees assigned to each project per month. Each cell shows the headcount
+  for that project in the given month. Use the date range filter to focus on a specific period.
+</p>
+
+<form method="get" action="{{ url_for('staffing_statistics_projects') }}" style="margin-bottom:1rem;">
+  <div class="filter-bar" style="margin-bottom:0;">
+    {% set years = all_record_months | map(attribute=0) | list | unique | sort | list %}
+    {% if not years %}{% set years = [today_year] %}{% endif %}
+    <label style="font-size:0.8rem;font-weight:600;color:#555;white-space:nowrap;">From</label>
+    <select name="from_month" style="padding:0.35rem 0.65rem;border:1px solid #ccd;border-radius:4px;font-size:0.875rem;background:#f9fafc;min-width:0;">
+      {% for i in range(1, 13) %}
+      <option value="{{ i }}" {% if i == from_month %}selected{% endif %}>{{ MONTHS[i-1] }}</option>
+      {% endfor %}
+    </select>
+    <select name="from_year" style="padding:0.35rem 0.65rem;border:1px solid #ccd;border-radius:4px;font-size:0.875rem;background:#f9fafc;min-width:0;">
+      {% for y in years %}
+      <option value="{{ y }}" {% if y == from_year %}selected{% endif %}>{{ y }}</option>
+      {% endfor %}
+    </select>
+    <label style="font-size:0.8rem;font-weight:600;color:#555;white-space:nowrap;margin-left:0.5rem;">To</label>
+    <select name="to_month" style="padding:0.35rem 0.65rem;border:1px solid #ccd;border-radius:4px;font-size:0.875rem;background:#f9fafc;min-width:0;">
+      {% for i in range(1, 13) %}
+      <option value="{{ i }}" {% if i == to_month %}selected{% endif %}>{{ MONTHS[i-1] }}</option>
+      {% endfor %}
+    </select>
+    <select name="to_year" style="padding:0.35rem 0.65rem;border:1px solid #ccd;border-radius:4px;font-size:0.875rem;background:#f9fafc;min-width:0;">
+      {% for y in years %}
+      <option value="{{ y }}" {% if y == to_year %}selected{% endif %}>{{ y }}</option>
+      {% endfor %}
+    </select>
+    <button type="submit" style="padding:0.35rem 0.9rem;font-size:0.875rem;background:#1a3a5c;color:#fff;border:none;border-radius:4px;cursor:pointer;">Apply</button>
+    {% if all_record_months and (from_year != today_year or from_month != today_month or to_year != default_to_year or to_month != default_to_month) %}
+    <a href="{{ url_for('staffing_statistics_projects') }}" style="font-size:0.8rem;color:#1a3a5c;text-decoration:none;margin-left:0.25rem;">Reset</a>
+    {% endif %}
+  </div>
+</form>
+
+{% if not all_pids or not months %}
+<div class="empty">No staffing data for the selected range.</div>
+{% else %}
+<div class="table-toolbar">
+  <input type="search" class="search-input" id="proj-search" placeholder="Search projects…" oninput="applyFilters()">
+  <button type="button" class="qf-btn" id="btn-active-only" onclick="toggleActiveOnly()">Active Only</button>
+  <span class="row-count" id="row-count"></span>
+</div>
+<div class="matrix-wrap">
+  <table>
+    <thead>
+      <tr>
+        <th onclick="sortByProject()" id="th-project">Project <span class="sort-indicator" id="sort-ind">&#9650;</span></th>
+        <th class="net-change-cell" title="Change in headcount from first to last month in the filtered range">Net Change</th>
+        {% for year, month in months %}
+          {% set is_current = (year == today_year and month == today_month) %}
+          {% set is_past    = (year < today_year) or (year == today_year and month < today_month) %}
+          <th class="{% if is_current %}col-current{% endif %}">
+            <div class="month-label">{{ year }}-{{ '%02d'|format(month) }}</div>
+            {% if is_current %}
+              <span class="month-badge badge-current">Current</span>
+            {% elif is_past %}
+              <span class="month-badge badge-past">Past</span>
+            {% else %}
+              <span class="month-badge badge-future">Planned</span>
+            {% endif %}
+          </th>
+        {% endfor %}
+      </tr>
+    </thead>
+    <tbody>
+      {% for pid in all_pids %}
+        {% set proj = proj_map.get(pid, {}) %}
+        <tr data-active="{{ 'true' if proj.get('active', True) else 'false' }}"
+            data-search="{{ (pid ~ ' ' ~ proj.get('project_description', '')) | lower }}">
+          <td>
+            {% if proj.get('project_color') %}
+              <span class="color-dot" style="background:{{ proj.project_color }};"></span>
+            {% endif %}
+            <span class="emp-name">
+              <button class="proj-btn" onclick='openProjectModal({{ pid | tojson }})'>{{ pid }}</button>
+            </span>
+            {% if proj.get('project_description') %}
+              <span class="proj-desc">{{ proj.project_description }}</span>
+            {% endif %}
+          </td>
+          <td class="net-change-cell">—</td>
+          {% for year, month in months %}
+            {% set cnt = month_project_counts.get((year, month), {}).get(pid, 0) %}
+            <td data-count="{{ cnt }}">
+              {% if cnt %}
+                <span class="count-badge">{{ cnt }}</span>
+              {% else %}
+                <span class="count-zero">—</span>
+              {% endif %}
+            </td>
+          {% endfor %}
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+<script>
+  let _sortAsc = true;
+  let _activeOnly = false;
+
+  function applyFilters() {
+    const q = (document.getElementById('proj-search').value || '').toLowerCase();
+    const rows = document.querySelectorAll('.matrix-wrap tbody tr');
+    let visible = 0;
+    rows.forEach(row => {
+      const matchSearch = !q || row.dataset.search.includes(q);
+      const matchActive = !_activeOnly || row.dataset.active === 'true';
+      const show = matchSearch && matchActive;
+      row.style.display = show ? '' : 'none';
+      if (show) visible++;
+    });
+    const total = rows.length;
+    document.getElementById('row-count').textContent =
+      visible === total ? `${total} project${total !== 1 ? 's' : ''}` : `${visible} of ${total} project${total !== 1 ? 's' : ''}`;
+  }
+
+  function toggleActiveOnly() {
+    _activeOnly = !_activeOnly;
+    document.getElementById('btn-active-only').classList.toggle('on', _activeOnly);
+    applyFilters();
+    const btn = document.getElementById('export-btn');
+    if (btn) {
+      const url = new URL(btn.href);
+      if (_activeOnly) url.searchParams.set('active_only', '1');
+      else url.searchParams.delete('active_only');
+      btn.href = url.toString();
+    }
+  }
+
+  function sortByProject() {
+    const tbody = document.querySelector('.matrix-wrap tbody');
+    const rows = Array.from(tbody.querySelectorAll('tr'));
+    rows.sort((a, b) => {
+      const ka = a.cells[0].textContent.trim().toLowerCase();
+      const kb = b.cells[0].textContent.trim().toLowerCase();
+      return _sortAsc ? ka.localeCompare(kb) : kb.localeCompare(ka);
+    });
+    _sortAsc = !_sortAsc;
+    document.getElementById('sort-ind').innerHTML = _sortAsc ? '&#9650;' : '&#9660;';
+    rows.forEach(r => tbody.appendChild(r));
+  }
+
+  function updateNetChange() {
+    document.querySelectorAll('.matrix-wrap tbody tr').forEach(row => {
+      const monthCells = row.querySelectorAll('td[data-count]');
+      const netCell = row.querySelector('td.net-change-cell');
+      if (!netCell) return;
+      if (monthCells.length < 2) {
+        netCell.innerHTML = '<span class="delta-zero">—</span>';
+        return;
+      }
+      const first = parseInt(monthCells[0].dataset.count, 10);
+      const last  = parseInt(monthCells[monthCells.length - 1].dataset.count, 10);
+      const delta = last - first;
+      if (delta > 0) {
+        netCell.innerHTML = `<span class="delta-pos">+${delta}</span>`;
+      } else if (delta < 0) {
+        netCell.innerHTML = `<span class="delta-neg">${delta}</span>`;
+      } else {
+        netCell.innerHTML = `<span class="delta-zero">0</span>`;
+      }
+    });
+  }
+
+  function updateStickyOffsets() {
+    const projTh = document.getElementById('th-project');
+    if (!projTh) return;
+    const w = projTh.offsetWidth;
+    document.querySelectorAll('.net-change-cell').forEach(el => { el.style.left = w + 'px'; });
+  }
+
+  // initialise on load
+  document.addEventListener('DOMContentLoaded', () => {
+    applyFilters();
+    updateNetChange();
+    updateStickyOffsets();
+  });
+</script>
+{% endif %}
+
+<!-- Project detail modal -->
+<div class="modal-backdrop" id="proj-modal" onclick="if(event.target===this)closeProjectModal()">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="modal-title">Project</h3>
+      <button class="modal-close" onclick="closeProjectModal()">&times;</button>
+    </div>
+    <div class="modal-body" id="modal-body"></div>
+    <div class="modal-footer">
+      <a id="modal-detail-link" href="#" class="btn-view-profile">View Project</a>
+    </div>
+  </div>
+</div>
+
+<script>
+function openProjectModal(pid) {
+  const p = PROJ_DATA[pid];
+  if (!p) return;
+
+  document.getElementById('modal-title').textContent = pid;
+  document.getElementById('modal-detail-link').href = p.url;
+
+  const rows = [
+    ['Project ID',   p.id],
+    ['Description',  p.description || '—'],
+    ['Color',        p.color],
+    ['Color Label',  p.color_label || '—'],
+    ['Status',       p.active ? 'Active' : 'Inactive'],
+  ];
+
+  document.getElementById('modal-body').innerHTML = rows.map(([label, value]) => {
+    let display = value;
+    if (label === 'Color' && value) {
+      display = `<span class="modal-color-swatch" style="background:${value};"></span>${value}`;
+    } else if (label === 'Color' && !value) {
+      display = '—';
+    }
+    return `<div class="modal-row"><span class="modal-label">${label}</span><span class="modal-value">${display}</span></div>`;
+  }).join('');
+
+  document.getElementById('proj-modal').classList.add('open');
+}
+
+function closeProjectModal() {
+  document.getElementById('proj-modal').classList.remove('open');
+}
+
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeProjectModal(); });
+</script>
+{% endblock %}

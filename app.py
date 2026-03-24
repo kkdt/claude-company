@@ -525,6 +525,18 @@ def projects_detail(project_id):
     return render_template("project_detail.html", project=project)
 
 
+@app.route("/projects/<project_id>/statistics")
+def projects_statistics(project_id):
+    from flask import jsonify
+    records = load_staffing()
+    months = []
+    for r in sorted(records, key=lambda r: (r["year"], r["month"])):
+        count = sum(1 for a in r.get("assignments", []) if a.get("project_id") == project_id)
+        if count:
+            months.append({"year": r["year"], "month": r["month"], "count": count})
+    return jsonify({"project_id": project_id, "months": months})
+
+
 @app.route("/projects/<project_id>/edit", methods=["POST"])
 def projects_edit(project_id):
     all_projects = load_projects()
@@ -532,6 +544,14 @@ def projects_edit(project_id):
     if project is None:
         flash(f"Project '{project_id}' not found.")
         return redirect(url_for("projects"))
+    new_id = request.form.get("project_id", "").strip()
+    if not new_id:
+        flash("Project ID cannot be empty.")
+        return redirect(url_for("projects_detail", project_id=project_id))
+    if new_id != project_id and any(p.get("project_id") == new_id for p in all_projects):
+        flash(f"Project ID '{new_id}' is already in use.", 'error')
+        return redirect(url_for("projects_detail", project_id=project_id))
+    project["project_id"] = new_id
     project["project_description"] = request.form.get("project_description", "").strip()
     project["project_color"] = request.form.get("project_color", "").strip()
     project["color_label"] = request.form.get("color_label", "").strip()
@@ -540,8 +560,17 @@ def projects_edit(project_id):
     values = request.form.getlist("attr_value")
     project["attributes"] = [{"key": k.strip(), "value": v.strip()} for k, v in zip(keys, values) if k.strip()]
     save_projects(all_projects)
-    flash(f"Project '{project_id}' updated.")
-    return redirect(url_for("projects_detail", project_id=project_id))
+    if new_id != project_id:
+        records = load_staffing()
+        for record in records:
+            for assignment in record.get("assignments", []):
+                if assignment.get("project_id") == project_id:
+                    assignment["project_id"] = new_id
+        save_staffing(records)
+        flash(f"Project '{project_id}' renamed to '{new_id}' and staffing assignments updated.")
+    else:
+        flash(f"Project '{project_id}' updated.")
+    return redirect(url_for("projects_detail", project_id=new_id))
 
 
 @app.route("/projects/<project_id>/delete", methods=["POST"])
@@ -948,6 +977,285 @@ def staffing_remove_ghost(employee_id):
     flash(f"Removed all assignments for unknown employee '{employee_id}'.")
     next_url = request.form.get("next") or url_for("staffing")
     return redirect(next_url)
+
+
+@app.route("/staffing/statistics/projects")
+def staffing_statistics_projects():
+    from datetime import date
+    today = date.today()
+    records = load_staffing()
+    all_projects = load_projects()
+    proj_map = {p["project_id"]: p for p in all_projects}
+
+    all_record_months = sorted({(r["year"], r["month"]) for r in records})
+
+    if today.month == 12:
+        default_to_year, default_to_month = today.year + 1, 1
+    else:
+        default_to_year, default_to_month = today.year, today.month + 1
+    try:
+        from_year  = int(request.args.get("from_year",  today.year))
+        from_month = int(request.args.get("from_month", today.month))
+        to_year    = int(request.args.get("to_year",    default_to_year))
+        to_month   = int(request.args.get("to_month",   default_to_month))
+    except (ValueError, TypeError):
+        from_year, from_month = today.year, today.month
+        to_year, to_month = default_to_year, default_to_month
+
+    months = [
+        (r["year"], r["month"])
+        for r in sorted(records, key=lambda r: (r["year"], r["month"]))
+        if (from_year, from_month) <= (r["year"], r["month"]) <= (to_year, to_month)
+    ]
+
+    month_project_counts = {}
+    for r in records:
+        key = (r["year"], r["month"])
+        counts = {}
+        for a in r.get("assignments", []):
+            pid = a.get("project_id")
+            if pid:
+                counts[pid] = counts.get(pid, 0) + 1
+        month_project_counts[key] = counts
+
+    all_pids_set = set()
+    for ym in months:
+        all_pids_set.update(month_project_counts.get(ym, {}).keys())
+    all_pids = sorted(all_pids_set)
+
+    return render_template(
+        "staffing_statistics_projects.html",
+        months=months,
+        all_record_months=all_record_months,
+        all_pids=all_pids,
+        proj_map=proj_map,
+        month_project_counts=month_project_counts,
+        today_year=today.year,
+        today_month=today.month,
+        from_year=from_year,
+        from_month=from_month,
+        to_year=to_year,
+        to_month=to_month,
+        default_to_year=default_to_year,
+        default_to_month=default_to_month,
+    )
+
+
+@app.route("/staffing/statistics/projects/export")
+def staffing_statistics_projects_export():
+    from datetime import date
+    today = date.today()
+    records = load_staffing()
+    all_projects = load_projects()
+    proj_map = {p["project_id"]: p for p in all_projects}
+
+    all_record_months = sorted({(r["year"], r["month"]) for r in records})
+
+    if today.month == 12:
+        default_to_year, default_to_month = today.year + 1, 1
+    else:
+        default_to_year, default_to_month = today.year, today.month + 1
+    try:
+        from_year  = int(request.args.get("from_year",  today.year))
+        from_month = int(request.args.get("from_month", today.month))
+        to_year    = int(request.args.get("to_year",    default_to_year))
+        to_month   = int(request.args.get("to_month",   default_to_month))
+    except (ValueError, TypeError):
+        from_year, from_month = today.year, today.month
+        to_year, to_month = default_to_year, default_to_month
+
+    months = [
+        (r["year"], r["month"])
+        for r in sorted(records, key=lambda r: (r["year"], r["month"]))
+        if (from_year, from_month) <= (r["year"], r["month"]) <= (to_year, to_month)
+    ]
+
+    month_project_counts = {}
+    for r in records:
+        key = (r["year"], r["month"])
+        counts = {}
+        for a in r.get("assignments", []):
+            pid = a.get("project_id")
+            if pid:
+                counts[pid] = counts.get(pid, 0) + 1
+        month_project_counts[key] = counts
+
+    all_pids_set = set()
+    for ym in months:
+        all_pids_set.update(month_project_counts.get(ym, {}).keys())
+    all_pids = sorted(all_pids_set)
+
+    month_labels = [f"{yr}-{mo:02d}" for yr, mo in months]
+
+    output = io.StringIO()
+    writer = csv.writer(output, quoting=csv.QUOTE_ALL)
+    active_only = request.args.get("active_only") == "1"
+    if active_only:
+        all_pids = [pid for pid in all_pids if proj_map.get(pid, {}).get("active", True)]
+
+    writer.writerow(["Project", "Description", "Active", "Color Label", "Net Change"] + month_labels)
+    for pid in all_pids:
+        proj = proj_map.get(pid, {})
+        desc = proj.get("project_description", "")
+        active = "Yes" if proj.get("active", True) else "No"
+        color_label = proj.get("color_label", "")
+        counts = [month_project_counts.get(ym, {}).get(pid, 0) for ym in months]
+        net_change = (counts[-1] - counts[0]) if len(counts) >= 2 else ""
+        row = [pid, desc, active, color_label, net_change] + counts
+        writer.writerow(row)
+
+    output.seek(0)
+    return Response(
+        output.getvalue(),
+        mimetype="text/csv",
+        headers={"Content-Disposition": "attachment; filename=statistics_projects.csv"},
+    )
+
+
+@app.route("/staffing/statistics/employees")
+def staffing_statistics_employees():
+    from datetime import date
+    today = date.today()
+    records = load_staffing()
+    employees = load_employees()
+    emp_map = {e["employee_id"]: e for e in employees}
+
+    all_record_months = sorted({(r["year"], r["month"]) for r in records})
+
+    if today.month == 12:
+        default_to_year, default_to_month = today.year + 1, 1
+    else:
+        default_to_year, default_to_month = today.year, today.month + 1
+    try:
+        from_year  = int(request.args.get("from_year",  today.year))
+        from_month = int(request.args.get("from_month", today.month))
+        to_year    = int(request.args.get("to_year",    default_to_year))
+        to_month   = int(request.args.get("to_month",   default_to_month))
+    except (ValueError, TypeError):
+        from_year, from_month = today.year, today.month
+        to_year, to_month = default_to_year, default_to_month
+
+    months = [
+        (r["year"], r["month"])
+        for r in sorted(records, key=lambda r: (r["year"], r["month"]))
+        if (from_year, from_month) <= (r["year"], r["month"]) <= (to_year, to_month)
+    ]
+
+    # {(year, month): {employee_id: assignment_count}}
+    month_emp_counts = {}
+    stored_names = {}
+    for r in records:
+        key = (r["year"], r["month"])
+        counts = {}
+        for a in r.get("assignments", []):
+            eid = a.get("employee_id")
+            if eid:
+                counts[eid] = counts.get(eid, 0) + 1
+                if "employee_name" in a:
+                    stored_names[eid] = a["employee_name"]
+        month_emp_counts[key] = counts
+
+    # Employee IDs that appear in the filtered months
+    all_eids_set = set()
+    for ym in months:
+        all_eids_set.update(month_emp_counts.get(ym, {}).keys())
+    # Sort by employee name, falling back to ID
+    all_eids = sorted(all_eids_set, key=lambda eid: (
+        emp_map[eid]["employee_name"] if eid in emp_map else stored_names.get(eid, eid)
+    ))
+
+    supervisors = sorted({
+        emp_map[eid]["supervisor_organization"]
+        for eid in all_eids
+        if eid in emp_map and emp_map[eid].get("supervisor_organization")
+    })
+
+    return render_template(
+        "staffing_statistics_employees.html",
+        months=months,
+        all_record_months=all_record_months,
+        all_eids=all_eids,
+        emp_map=emp_map,
+        stored_names=stored_names,
+        month_emp_counts=month_emp_counts,
+        today_year=today.year,
+        today_month=today.month,
+        from_year=from_year,
+        from_month=from_month,
+        to_year=to_year,
+        to_month=to_month,
+        default_to_year=default_to_year,
+        default_to_month=default_to_month,
+        supervisors=supervisors,
+    )
+
+
+@app.route("/staffing/statistics/employees/export")
+def staffing_statistics_employees_export():
+    from datetime import date
+    today = date.today()
+    records = load_staffing()
+    employees = load_employees()
+    emp_map = {e["employee_id"]: e for e in employees}
+
+    if today.month == 12:
+        default_to_year, default_to_month = today.year + 1, 1
+    else:
+        default_to_year, default_to_month = today.year, today.month + 1
+    try:
+        from_year  = int(request.args.get("from_year",  today.year))
+        from_month = int(request.args.get("from_month", today.month))
+        to_year    = int(request.args.get("to_year",    default_to_year))
+        to_month   = int(request.args.get("to_month",   default_to_month))
+    except (ValueError, TypeError):
+        from_year, from_month = today.year, today.month
+        to_year, to_month = default_to_year, default_to_month
+
+    months = [
+        (r["year"], r["month"])
+        for r in sorted(records, key=lambda r: (r["year"], r["month"]))
+        if (from_year, from_month) <= (r["year"], r["month"]) <= (to_year, to_month)
+    ]
+
+    month_emp_counts = {}
+    stored_names = {}
+    for r in records:
+        key = (r["year"], r["month"])
+        counts = {}
+        for a in r.get("assignments", []):
+            eid = a.get("employee_id")
+            if eid:
+                counts[eid] = counts.get(eid, 0) + 1
+                if "employee_name" in a:
+                    stored_names[eid] = a["employee_name"]
+        month_emp_counts[key] = counts
+
+    all_eids_set = set()
+    for ym in months:
+        all_eids_set.update(month_emp_counts.get(ym, {}).keys())
+    all_eids = sorted(all_eids_set, key=lambda eid: (
+        emp_map[eid]["employee_name"] if eid in emp_map else stored_names.get(eid, eid)
+    ))
+
+    month_labels = [f"{yr}-{mo:02d}" for yr, mo in months]
+
+    output = io.StringIO()
+    writer = csv.writer(output, quoting=csv.QUOTE_ALL)
+    writer.writerow(["Employee ID", "Employee Name", "Job Profile", "Supervisor Organization"] + month_labels)
+    for eid in all_eids:
+        emp = emp_map.get(eid, {})
+        name = emp.get("employee_name", stored_names.get(eid, eid))
+        job_profile = emp.get("job_profile", "")
+        supervisor = emp.get("supervisor_organization", "")
+        row = [eid, name, job_profile, supervisor] + [month_emp_counts.get(ym, {}).get(eid, 0) for ym in months]
+        writer.writerow(row)
+
+    output.seek(0)
+    return Response(
+        output.getvalue(),
+        mimetype="text/csv",
+        headers={"Content-Disposition": "attachment; filename=statistics_employees.csv"},
+    )
 
 
 if __name__ == "__main__":
